@@ -4,11 +4,12 @@
 #include <bf.h>
 #include <bp_file.h>
 
-
+//mayro
 typedef struct
-{
-
-
+{ 
+    BPLUS_INFO* info;
+    BF_Block* current_block;
+    int counter_keys;
 } BPLUS_INDEX_NODE;
 
 #endif
