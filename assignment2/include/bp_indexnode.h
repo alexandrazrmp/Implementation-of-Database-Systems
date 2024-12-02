@@ -6,10 +6,11 @@
 
 //mayro
 typedef struct
-{ 
+{
     BPLUS_INFO* info;
-    BF_Block* current_block;
+    int block_id;
     int counter_keys;
+
 } BPLUS_INDEX_NODE;
 
 #endif

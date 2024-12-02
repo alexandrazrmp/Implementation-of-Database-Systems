@@ -8,8 +8,7 @@
 typedef struct {
     int height;
     BF_Block* root;
-    //int block_size isvwwwwwwwwwwww
-    
+    int block_size;
 } BPLUS_INFO;
 
 
