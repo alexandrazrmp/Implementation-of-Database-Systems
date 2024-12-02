@@ -11,6 +11,8 @@
 #define MAX_OPEN_FILES 20
 #define bplus_ERROR -1
 
+int last_block = -1;
+
 #define CALL_BF(call)         \
   {                           \
     BF_ErrorCode code = call; \
@@ -47,10 +49,12 @@ int BP_CreateFile(char *fileName)
   CALL_BF(BF_AllocateBlock(fd,block));
   data = BF_Block_GetData(block);
   BPLUS_INFO bpinfo;
-  bpinfo.height = 0;
-  bpinfo.root = NULL;
-  bpinfo.block_size = BF_BLOCK_SIZE/sizeof(Record);
+  bpinfo.max_height= 0;
+  bpinfo.root = -1;
+  bpinfo.data_size = BF_BLOCK_SIZE/sizeof(Record);
+  bpinfo.index_size = 4;
 
+  
 
   memcpy(data, &bpinfo, sizeof(BPLUS_INFO));            //storing metadata
   BF_Block_SetDirty(block);                             //marking the block as dirty since it has been altered
@@ -101,6 +105,22 @@ int BP_CloseFile(int file_desc,BPLUS_INFO* info)
 
 int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 { 
+
+  if(bplus_info->root==-1){
+
+    BPLUS_INDEX_NODE* BP_INDEX;
+    BPLUS_DATA_NODE* BP_DATA;
+    int height=1;
+    BP_INDEX= create_index_node(&file_desc,last_block,height);
+    last_block++;
+    bplus_info->root = last_block;
+    BP_DATA=create_data_node(&file_desc);
+    
+    // create data block
+    // BF_Block_SetDirty???
+  }
+
+  
   return 0;
 }
 

@@ -6,9 +6,10 @@
 
 
 typedef struct {
-    int height;
-    BF_Block* root;
-    int block_size;
+    int max_height;
+    int root;
+    int index_size;
+    int data_size;
 } BPLUS_INFO;
 
 
