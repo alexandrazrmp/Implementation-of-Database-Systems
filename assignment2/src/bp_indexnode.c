@@ -105,7 +105,7 @@ int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int
                 return 0;
             }
             else{
-                //spit_index(INDEX_NODE, &ins_index_to_new_block &ins_key_that_goes_up);
+                //split_index(INDEX_NODE, &ins_index_to_new_block &ins_key_that_goes_up);
                 // BP_INFO->root=value1
                 return 0; //pointer to index node to 
             }
@@ -117,9 +117,48 @@ int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int
     return -1;
 }
 
-int split_index(){
+int split_index(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index, int* ins_key,int* fd){
+    BPLUS_INDEX_NODE* newdata=create_index_node(fd,);
+    int key = *ins_key;
+    int index = *ins_index;
+    int mid=INDEX_NODE->counter_keys/2;
+    *ins_key=INDEX_NODE->keys[mid];//return mid
+    if (key>ins_key && key<INDEX_NODE->keys[mid+1])
+    {
+        *ins_key=key;
+    }
     
+    int i, j=0;
+    for (i = mid+1; i < INDEX_NODE->counter_keys; i++)
+    {
+        newdata->keys[j]=INDEX_NODE->keys[i];
+        newdata->pointers[j]=INDEX_NODE->pointers[i];
+
+        // Data_Node.Records[i]=NULL;
+        j++;
+    }
+    newdata->pointers[j]=INDEX_NODE->pointers[i];
+
+    newdata->counter_keys=j;
+    INDEX_NODE->counter_keys=mid + 1;
+    int new_block_id;
+    BF_GetBlockCounter(fd,&new_block_id);
+    *ins_index = new_block_id - 1;
+
+
+    for (i = mid-1;i > -1;i--){
+        if (key > INDEX_NODE->keys[i]){
+            break;}
+        INDEX_NODE->keys[i+1] = INDEX_NODE->keys[i];
+        INDEX_NODE->pointers[i+2] = INDEX_NODE->pointers[i+1];
+    }
     
+    INDEX_NODE->keys[i+1] = key;
+    INDEX_NODE->pointers[i+2] = index;
+
+
+    
+
     return 0;
 }
 
