@@ -18,3 +18,16 @@ BPLUS_DATA_NODE* create_data_node(int *fd){
     BP_INFO->NextDataBlockNum = -1;
     return BP_INFO;
 }
+
+bool is_full_data(BPLUS_DATA_NODE* BP_DATA){
+
+    if (BP_DATA->record_counter==4){
+        return true;
+    }
+    return false;
+}
+
+int split_data(){
+    
+}
+

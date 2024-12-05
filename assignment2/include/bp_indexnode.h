@@ -21,8 +21,10 @@ typedef struct
 
 BPLUS_INDEX_NODE* create_index_node(int *fd,int last_block,int height);
 
-bool is_full(BPLUS_INDEX_NODE* BP_INFO);
+bool is_full_index(BPLUS_INDEX_NODE* BP_INDEX);
 
-int search_split(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int block_id,int key);
+int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int* block, int *ins_index, int* ins_key);
+
+int split_index();
 
 #endif
