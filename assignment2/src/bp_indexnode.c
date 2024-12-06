@@ -39,6 +39,7 @@ bool is_full_index(BPLUS_INDEX_NODE *BP_INFO)
     }
     return false;
 }
+
 void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2) {
     int i;
     for (i = INDEX_NODE->counter_keys; i >= 0; i--)
@@ -71,7 +72,7 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     BF_Block *dataBlock;
     void *data;
     BF_Block_Init(&dataBlock);
-
+    //if seg fault look first!!!!////////////////////////////////////////////////////////////
     if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key)
     {
         i = (INDEX_NODE->counter_keys) - 1;
@@ -86,11 +87,46 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
             }
         }
     } // i holds the pointer to the block we must search
-    CALL_OR_EXIT(BF_GetBlock(*fd, i, dataBlock));
+    //IF THERE IS NO DATA BLOCK
+    if(INDEX_NODE->pointers[i] == -1){
+        BPLUS_DATA_NODE *Data_Node = create_data_node(fd);
+        *block = last_block_num;
+        return 0;
+    }
+    CALL_OR_EXIT(BF_GetBlock(*fd, INDEX_NODE->pointers[i], dataBlock));
     data = BF_Block_GetData(dataBlock);
 
+    if (INDEX_NODE->leaf && INDEX_NODE->root){
+        BPLUS_DATA_NODE *Data_Node;
+        Data_Node = data;
+        // Case 1 the entry fits
+        if (!is_full_data(Data_Node))
+        {
+            *block = INDEX_NODE->pointers[i];
+            BF_Block_SetDirty(dataBlock);
+            CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
+            return 0;
+            // Case 2 index node not full but data is
+        }
+        else if (!is_full_index(INDEX_NODE))
+        {
+            split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
+            Order_Keys(INDEX_NODE,*ins_index,*ins_key);
+            BF_Block_SetDirty(dataBlock);
+            CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
+            return 0;
+        }
+        else
+        {
+            split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
+            split_root(BP_INFO,INDEX_NODE, block, ins_index, ins_key, fd);
+            BF_Block_SetDirty(dataBlock);
+            CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
+            return 0; // pointer to index node to
+        }
+    }
     // If we have reached final level of b-tree
-    if (INDEX_NODE->leaf)
+    else if (INDEX_NODE->leaf)
     {
         BPLUS_DATA_NODE *Data_Node;
         Data_Node = data;
@@ -142,7 +178,7 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
             }
             else
             {
-                split_index(INDEX_NODE, block, value1, value2, fd);
+                split_index(INDEX_NODE, block, &value1, &value2, fd);
                 *ins_index = value1;
                 *ins_key = value2;
                 BF_Block_SetDirty(dataBlock);

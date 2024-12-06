@@ -13,7 +13,7 @@ typedef struct {
     
     int NextDataBlockNum;
     Record Records[4]; 
-    //maybe platos dictionary
+    
 } BPLUS_DATA_NODE;
 
 BPLUS_DATA_NODE* create_data_node(int *fd);
