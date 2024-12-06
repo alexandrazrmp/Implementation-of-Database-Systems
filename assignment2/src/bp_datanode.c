@@ -29,7 +29,7 @@ bool is_full_data(BPLUS_DATA_NODE* BP_DATA){
 }
 
 void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* block, int* ins_index, int* ins_key,int key,int* fd){
-    BPLUS_DATA_NODE* newindex=create_data_node(fd);
+    BPLUS_DATA_NODE* newdata=create_data_node(fd);
 
     int mid=Data_Node->record_counter/2;
     *ins_key=Data_Node->Records[mid].id;//return mid
@@ -37,20 +37,20 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     {
         if (key<Data_Node->Records[mid+1].id)
         {
-             *ins_key=key;
+            *ins_key=key;
         }
     }
     int j=0;
     for (int i = mid; i < Data_Node->record_counter; i++)
     {
-        newindex->Records[j]=Data_Node->Records[i];
+        newdata->Records[j]=Data_Node->Records[i];
         // Data_Node.Records[i]=NULL;
         j++;
     }
-    newindex->record_counter=j;
+    newdata->record_counter=j;
     Data_Node->record_counter=mid;
 
-    newindex->NextDataBlockNum = Data_Node->NextDataBlockNum;
+    newdata->NextDataBlockNum = Data_Node->NextDataBlockNum;
     int new_block_id;
     BF_GetBlockCounter(*fd,&new_block_id);
     *ins_index = new_block_id - 1;

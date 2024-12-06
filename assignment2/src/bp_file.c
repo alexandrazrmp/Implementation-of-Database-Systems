@@ -25,11 +25,11 @@ int BP_CreateFile(char *fileName)
   BF_Block_Init(&block);
 
   //create and open file
-  CALL_BF(BF_CreateFile(fileName));
-  CALL_BF(BF_OpenFile(fileName,&fd));
+  CALL_OR_DIE(BF_CreateFile(fileName));
+  CALL_OR_DIE(BF_OpenFile(fileName,&fd));
 
   //allocate the first block and store metadata
-  CALL_BF(BF_AllocateBlock(fd,block));
+  CALL_OR_DIE(BF_AllocateBlock(fd,block));
   data = BF_Block_GetData(block);
   BPLUS_INFO bpinfo;
   bpinfo.max_height= 0;
@@ -41,8 +41,8 @@ int BP_CreateFile(char *fileName)
 
   memcpy(data, &bpinfo, sizeof(BPLUS_INFO));            //storing metadata
   BF_Block_SetDirty(block);                             //marking the block as dirty since it has been altered
-  CALL_BF(BF_UnpinBlock(block));                        //unpinning the block in order to close the file
-  CALL_BF(BF_CloseFile(fd));
+  CALL_OR_DIE(BF_UnpinBlock(block));                        //unpinning the block in order to close the file
+  CALL_OR_DIE(BF_CloseFile(fd));
   return 0;
 }
 
@@ -73,15 +73,15 @@ int BP_CloseFile(int file_desc,BPLUS_INFO* info)
 { 
   
   int blocks;
-  CALL_BF(BF_GetBlockCounter(file_desc,&blocks));
+  CALL_OR_DIE(BF_GetBlockCounter(file_desc,&blocks));
   BF_Block *block;
   BF_Block_Init(&block);
   //unpinning all blocks in order to close the file
   for(int i=0;i<blocks;i++){
-    CALL_BF(BF_GetBlock(file_desc,i,block));
-    CALL_BF(BF_UnpinBlock(block));
+    CALL_OR_DIE(BF_GetBlock(file_desc,i,block));
+    CALL_OR_DIE(BF_UnpinBlock(block));
   }
-  CALL_BF(BF_CloseFile(file_desc));
+  CALL_OR_DIE(BF_CloseFile(file_desc));
   open_files--;
   //handle file array
   return 0;
@@ -96,7 +96,8 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 
     BPLUS_INDEX_NODE* BP_INDEX;
     BPLUS_DATA_NODE* BP_DATA;
-    BP_INDEX= create_index_node(&file_desc,true,false);
+    BF_Block* block1;
+    BP_INDEX= create_index_node(&file_desc,true,false,block1);
     bplus_info->root = last_block_num;
     BP_DATA=create_data_node(&file_desc);
     
