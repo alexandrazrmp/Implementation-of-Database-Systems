@@ -9,29 +9,12 @@
 #include <stdbool.h>
 
 #define MAX_OPEN_FILES 20
-#define bplus_ERROR -1
 
-int last_block = -1;
-
-#define CALL_BF(call)         \
-  {                           \
-    BF_ErrorCode code = call; \
-    if (code != BF_OK)        \
-    {                         \
-      BF_PrintError(code);    \
-      return bplus_ERROR;     \
-    }                         \
-  }
-#define CALL_OR_EXIT(call)       \
-{                           \
-  BF_ErrorCode code = call; \
-  if (code != BF_OK) {         \
-    BF_PrintError(code);    \
-    exit(code);       \
-  }                        \
-}
 int open_files = 0;
 int files[MAX_OPEN_FILES];
+
+
+int last_block_num=-1;
 
 
 int BP_CreateFile(char *fileName)
@@ -54,7 +37,7 @@ int BP_CreateFile(char *fileName)
   bpinfo.data_size = BF_BLOCK_SIZE/sizeof(Record);
   bpinfo.index_size = 4;
 
-  
+  last_block_num++;
 
   memcpy(data, &bpinfo, sizeof(BPLUS_INFO));            //storing metadata
   BF_Block_SetDirty(block);                             //marking the block as dirty since it has been altered
@@ -81,6 +64,8 @@ BPLUS_INFO* BP_OpenFile(char *fileName, int *file_desc)
   open_files++;
   data = BF_Block_GetData(block);
   bpInfo = data;
+  CALL_OR_EXIT(BF_GetBlockCounter(*file_desc,&last_block_num));
+  last_block_num--;
   return bpInfo;
 }
 
@@ -111,9 +96,8 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 
     BPLUS_INDEX_NODE* BP_INDEX;
     BPLUS_DATA_NODE* BP_DATA;
-    BP_INDEX= create_index_node(&file_desc,last_block,true,false);
-    last_block++;
-    bplus_info->root = last_block;
+    BP_INDEX= create_index_node(&file_desc,true,false);
+    bplus_info->root = last_block_num;
     BP_DATA=create_data_node(&file_desc);
     
     // create data block

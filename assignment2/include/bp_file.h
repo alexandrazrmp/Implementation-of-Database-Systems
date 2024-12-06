@@ -3,7 +3,27 @@
 #include <record.h>
 #include <stdbool.h>
 
+#define bplus_ERROR -1
 
+#define CALL_BF(call)         \
+  {                           \
+    BF_ErrorCode code = call; \
+    if (code != BF_OK)        \
+    {                         \
+      BF_PrintError(code);    \
+      return bplus_ERROR;     \
+    }                         \
+  }
+#define CALL_OR_EXIT(call)    \
+{                             \
+  BF_ErrorCode code = call;   \
+  if (code != BF_OK) {        \
+    BF_PrintError(code);      \
+    exit(code);               \
+  }                           \
+}
+
+extern int last_block_num ;
 
 typedef struct {
     int max_height;

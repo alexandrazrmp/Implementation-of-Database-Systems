@@ -10,6 +10,7 @@
 #define RECORDS_NUM 200 // you can change it if you want
 #define FILE_NAME "data.db"
 
+
 #define CALL_OR_DIE(call)     \
   {                           \
     BF_ErrorCode code = call; \
@@ -25,10 +26,14 @@ void findEntries();
 
 int main()
 {
-  
 
   insertEntries();
-  findEntries();
+  // findEntries();
+
+  int fd;
+  BPLUS_INFO* BP_INFO= BP_OpenFile(FILE_NAME,&fd);
+
+  print_data(fd,BP_INFO->root);
 
   ////////////////////////////////////////////////
   

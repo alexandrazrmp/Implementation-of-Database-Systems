@@ -20,12 +20,16 @@ typedef struct
 }BPLUS_INDEX_NODE;
 
 
-BPLUS_INDEX_NODE* create_index_node(int *fd, int last_block, bool is_root, bool is_leaf);
+BPLUS_INDEX_NODE* create_index_node(int *fd,  bool is_root, bool is_leaf);
 
 bool is_full_index(BPLUS_INDEX_NODE* BP_INDEX);
 
 int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int* block, int *ins_index, int* ins_key);
 
 int split_index(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index, int* ins_key,int* fd);
+
+int split_root(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index1,int* ins_index2, int* ins_key,int* fd);
+
+void print_index(int fd, int root_block_num); 
 
 #endif
