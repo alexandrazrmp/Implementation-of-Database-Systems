@@ -33,4 +33,6 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index, int* in
 int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *ins_key, int *fd);
 //void print_index(int fd, int root_block_num); 
 
+void print_index(int *fd, int root_block_num);
+
 #endif

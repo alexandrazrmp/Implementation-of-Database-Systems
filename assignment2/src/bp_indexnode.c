@@ -326,6 +326,100 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     return 0;
 }
 
-// void print_index(int fd, int root_block_num)
-// {
-// }
+// Recursive helper function to print a single level of the B+ tree
+void print_level(int *fd, int *blocks, int num_blocks, int level, int max_width) {
+    BF_Block *block;
+    BF_Block_Init(&block);
+
+    int spacing = max_width / (num_blocks + 1);  // Calculate spacing between nodes
+    printf("\nLevel %d:\n", level);
+
+    for (int i = 0; i < num_blocks; i++) {
+        int block_id = blocks[i];
+
+        // Print spacing before the block
+        for (int s = 0; s < spacing; s++) {
+            printf(" ");
+        }
+
+        // Get the block data
+        CALL_OR_EXIT(BF_GetBlock(*fd, block_id, block));
+        void *data = BF_Block_GetData(block);
+        BPLUS_INDEX_NODE *index_node = (BPLUS_INDEX_NODE *)data;
+
+        // Print the block keys
+        printf("[");
+        for (int j = 0; j < index_node->counter_keys; j++) {
+            printf("%d", index_node->keys[j]);
+            if (j < index_node->counter_keys - 1) {
+                printf(" | ");
+            }
+        }
+        printf("]");
+
+        // Unpin the block
+        BF_UnpinBlock(block);
+    }
+    printf("\n");
+
+}
+
+// Function to recursively traverse the tree and collect child blocks for the next level
+int collect_children(int *fd, int *parent_blocks, int num_parent_blocks, int *child_blocks) {
+    BF_Block *block;
+    BF_Block_Init(&block);
+
+    int child_index = 0;
+    for (int i = 0; i < num_parent_blocks; i++) {
+        int block_id = parent_blocks[i];
+
+        CALL_OR_EXIT(BF_GetBlock(*fd, block_id, block));
+        void *data = BF_Block_GetData(block);
+        BPLUS_INDEX_NODE *index_node = (BPLUS_INDEX_NODE *)data;
+
+        // If not a leaf, collect child pointers
+        if (!index_node->leaf) {
+            for (int j = 0; j <= index_node->counter_keys; j++) {
+                if (index_node->pointers[j] != -1) {
+                    child_blocks[child_index++] = index_node->pointers[j];
+                }
+            }
+        }
+
+        BF_UnpinBlock(block);
+    }
+    return child_index;  // Return the number of children collected
+}
+
+// Main function to print the B+ tree as a tree structure
+void print_index(int *fd, int root_block_num) {
+    if (root_block_num < 0) {
+        printf("Invalid root block number.\n");
+        return;
+    }
+
+    int parent_blocks[1000];  // Array to store blocks at the current level
+    int child_blocks[1000];   // Array to store blocks at the next level
+    int num_parent_blocks = 1;  // Start with the root block
+    parent_blocks[0] = root_block_num;
+
+    int level = 0;
+    int max_width = 80;  // Adjust this for a wider/narrower tree display
+
+    printf("B+ Tree Structure:\n");
+    while (num_parent_blocks > 0) {
+        // Print the current level
+        print_level(fd, parent_blocks, num_parent_blocks, level, max_width);
+
+        // Collect child blocks for the next level
+        int num_child_blocks = collect_children(fd, parent_blocks, num_parent_blocks, child_blocks);
+
+        // Move to the next level
+        num_parent_blocks = num_child_blocks;
+        for (int i = 0; i < num_child_blocks; i++) {
+            parent_blocks[i] = child_blocks[i];
+        }
+
+        level++;
+    }
+}
