@@ -106,12 +106,12 @@ int BP_CloseFile(int file_desc,BPLUS_INFO* info)
 int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 { 
 
+  //if we are in the root
   if(bplus_info->root==-1){
 
     BPLUS_INDEX_NODE* BP_INDEX;
     BPLUS_DATA_NODE* BP_DATA;
-    int height=1;
-    BP_INDEX= create_index_node(&file_desc,last_block,height);
+    BP_INDEX= create_index_node(&file_desc,last_block,true,false);
     last_block++;
     bplus_info->root = last_block;
     BP_DATA=create_data_node(&file_desc);

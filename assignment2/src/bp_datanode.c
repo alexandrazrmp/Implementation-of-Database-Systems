@@ -54,7 +54,45 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     BF_GetBlockCounter(fd,&new_block_id);
     *ins_index = new_block_id - 1;
     Data_Node->NextDataBlockNum = new_block_id - 1;
-    
+
+}
+
+void print_data(int fd, int root_block_num){
+
+    BF_Block *block;
+    BF_Block_Init(&block);
+
+    //traverse the tree to find the most left index in the last level (leaf level)
+    int current_block_num = root_block_num;
+    while (true) {
+        CALL_BF(BF_GetBlock(fd, current_block_num, block));
+        void *data = BF_Block_GetData(block);
+        BPLUS_INDEX_NODE *index_node = (BPLUS_INDEX_NODE *)data;
+        
+        // If its the leaf stop traversal
+        if (index_node->leaf) {
+            break;
+        }
+
+        current_block_num = index_node->pointers[0];
+        // CALL_BF(BF_UnpinBlock(block));
+    }
+
+    while (current_block_num != -1) {
+        CALL_BF(BF_GetBlock(fd, current_block_num, block));
+        void *data = BF_Block_GetData(block);
+        BPLUS_DATA_NODE *data_node = (BPLUS_DATA_NODE *)data;
+
+        printf("Data Node (Block: %d):\n", current_block_num);
+        printf("  Record Counter: %d\n", data_node->record_counter);
+        for (int i = 0; i < data_node->record_counter; i++) {
+            printf("    Person with id %d and name %s %s\n", data_node->Records[i].id,data_node->Records[i].name,data_node->Records[i].surname );
+        }
+        
+        current_block_num = data_node->NextDataBlockNum;
+
+        // CALL_BF(BF_UnpinBlock(block));
+    }
 
 }
 

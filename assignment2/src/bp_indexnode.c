@@ -8,16 +8,39 @@
 #include "bp_indexnode.h"
 #include "bp_datanode.h"
 
-BPLUS_INDEX_NODE* create_index_node(int *fd,int last_block,int height){
+// BPLUS_INDEX_NODE* create_index_node(int *fd,int last_block){
+//     BF_Block *block;
+//     BPLUS_INDEX_NODE* BP_INFO;
+//     void* data;
+//     BF_Block_Init(&block);
+//     CALL_BF(BF_AllocateBlock(fd,block));
+//     data = BF_Block_GetData(block);
+//     BP_INFO->block_id = last_block + 1;
+//     BP_INFO->counter_keys = 0;
+//     // BP_INFO->height=height;
+//     return BP_INFO;
+// }
+
+BPLUS_INDEX_NODE* create_index_node(int *fd, int last_block, bool is_root, bool is_leaf) {
     BF_Block *block;
     BPLUS_INDEX_NODE* BP_INFO;
     void* data;
     BF_Block_Init(&block);
-    CALL_BF(BF_AllocateBlock(fd,block));
+    CALL_BF(BF_AllocateBlock(fd, block));
     data = BF_Block_GetData(block);
-    BP_INFO->block_id = last_block + 1;
-    BP_INFO->counter_keys = 0;
-    BP_INFO->height=height;
+
+    //initialize the index node structure
+    BP_INFO->block_id = last_block + 1; 
+    BP_INFO->counter_keys = 0;         
+    BP_INFO->root = is_root;          
+    BP_INFO->leaf = is_leaf;        
+
+
+    // memset(BP_INFO->keys, 0, sizeof(BP_INFO->keys));
+    // memset(BP_INFO->pointers, -1, sizeof(BP_INFO->pointers)); 
+    // memcpy(data, BP_INFO, sizeof(BPLUS_INDEX_NODE));
+    // BF_Block_SetDirty(block);//maybe dirty
+
     return BP_INFO;
 }
 
@@ -49,7 +72,7 @@ int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int
     CALL_BF(BF_GetBlock(fd,i,dataBlock));
     data = BF_Block_GetData(dataBlock);
     //If we have reached final level of b-tree
-    if(INDEX_NODE->height==BP_INFO->max_height){
+    if(INDEX_NODE->leaf){
         BPLUS_DATA_NODE* Data_Node;
         Data_Node = data;
         //Case 1 the entry fits
@@ -73,7 +96,7 @@ int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int
         
     }
     //If we still need to go down
-    else if(INDEX_NODE->height != 0){
+    else if(!INDEX_NODE->leaf && !INDEX_NODE->root){
         BPLUS_INDEX_NODE* NEXT_INDEX;
         int ret; //Search return value
         int value1,value2;
@@ -118,6 +141,9 @@ int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int
 }
 
 int split_index(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index, int* ins_key,int* fd){
+   
+    //use bf to get block data (is leaf/is root) and pass it on to the function
+   
     BPLUS_INDEX_NODE* newdata=create_index_node(fd,);
     int key = *ins_key;
     int index = *ins_index;
