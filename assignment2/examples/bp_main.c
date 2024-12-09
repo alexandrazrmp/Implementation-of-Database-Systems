@@ -46,7 +46,7 @@ void insertEntries(){
   int file_desc;
   BPLUS_INFO* info = BP_OpenFile(FILE_NAME, &file_desc);
   Record record;
-  for (int i = 0; i < 17; i++)
+  for (int i = 0; i < RECORDS_NUM; i++)
   {
     record = randomRecord();
     printf("%d record %d %s \n",i,record.id, record.name);

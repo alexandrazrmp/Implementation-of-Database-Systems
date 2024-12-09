@@ -286,6 +286,7 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *i
 
     INDEX_NODE->pointers[0] = temp_pointers[0];
     int mid = (INDEX_NODE->counter_keys + 1) / 2;
+    int temp = INDEX_NODE->counter_keys;
     *ins_key = temp_keys[mid]; // return mid
     INDEX_NODE->counter_keys = 0;
 
@@ -297,7 +298,7 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *i
     }
 
     j = 0;
-    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
+    for (i = mid + 1; i <=temp; i++)
     {
         newindex->keys[j] = temp_keys[i];
         newindex->pointers[j] = temp_pointers[i];
@@ -351,6 +352,7 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
     memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
     int mid = (INDEX_NODE->counter_keys + 1) / 2;
+    int temp = INDEX_NODE->counter_keys;
     INDEX_NODE->counter_keys = 0;
     INDEX_NODE->pointers[0] = temp_pointers[0];
     key = temp_keys[mid]; // return mid
@@ -363,12 +365,13 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     }
 
     j = 0;
-    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
+    for (i = mid + 1; i <=temp; i++)
     {
         newindex->keys[j] = temp_keys[i];
         newindex->pointers[j] = temp_pointers[i];
         newindex->counter_keys++;
         j++;
+        
     }
     newindex->pointers[j] = temp_pointers[i];
 
@@ -379,7 +382,7 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     newROOT->keys[0] = key;
     newROOT->counter_keys = 1;
     newROOT->pointers[0] = INDEX_NODE->block_id;
-    newROOT->pointers[1] = index - 1;
+    newROOT->pointers[1] = index -1;
     BP_INFO->root = index;
     BP_INFO->max_height++;
     //CALL_OR_EXIT(BF_UnpinBlock(block_index));
