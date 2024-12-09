@@ -7,6 +7,20 @@
 #include "record.h"
 #include "bp_datanode.h"
 
+BPLUS_DATA_NODE* create_root_data_node(int *fd){
+    BF_Block* block;
+    BPLUS_DATA_NODE* BP_INFO;
+    void* data;
+    BF_Block_Init(&block);
+    CALL_OR_EXIT(BF_AllocateBlock(*fd,block));
+    data = BF_Block_GetData(block);
+    BP_INFO = data;
+    BP_INFO->record_counter = 1;
+    BP_INFO->NextDataBlockNum = -1;
+    last_block_num++;
+    BF_Block_SetDirty(block);
+    return BP_INFO;
+}
 
 BPLUS_DATA_NODE* create_data_node(int *fd){
     BF_Block* block;
@@ -16,7 +30,7 @@ BPLUS_DATA_NODE* create_data_node(int *fd){
     CALL_OR_EXIT(BF_AllocateBlock(*fd,block));
     data = BF_Block_GetData(block);
     BP_INFO = data;
-    BP_INFO->record_counter = 0;
+    //BP_INFO->record_counter = 0;
     BP_INFO->NextDataBlockNum = -1;
     last_block_num++;
     BF_Block_SetDirty(block);
@@ -32,34 +46,98 @@ bool is_full_data(BPLUS_DATA_NODE* BP_DATA){
 }
 
 void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* block, int* ins_index, int* ins_key,int key,int* fd){
-    BPLUS_DATA_NODE* newdata=create_data_node(fd);
+    
 
-    int mid=Data_Node->record_counter/2;
-    *ins_key=Data_Node->Records[mid].id;//return mid
-    if (key > (*ins_key))
-    {   *block = last_block_num + 1;
-        if (key<Data_Node->Records[mid+1].id)
-        {
-            *ins_key=key;
-        }
-    }
-    int j=0;
-    for (int i = mid; i < Data_Node->record_counter; i++)
+    BF_Block *block1;
+    //if (!leaf_flag) BPLUS_INDEX_NODE *newindex = create_index_node(fd, INDEX_NODE->root, false, block1); 
+    //else
+    BPLUS_DATA_NODE* newdata=create_data_node(fd); 
+    int index = *ins_index;
+
+    int temp_keys[Data_Node->record_counter + 1];     // Array to hold the result of the keys after the insertion
+    int i;                                           // Iterator for the key array
+    int j = 0;                                       // Iterator for the temp_key array
+    for (i = 0; i < Data_Node->record_counter ; i++)
     {
-        newdata->Records[j]=Data_Node->Records[i];
-        // Data_Node.Records[i]=NULL;
-        newdata->record_counter++;
-        Data_Node->record_counter--;
+        if (key < Data_Node->Records[i].id && j == i)
+        {
+            temp_keys[j] = key; // Insert the new element in sorted order
+            j++;
+        }
+        temp_keys[j] = Data_Node->Records[i].id;
         j++;
     }
+    // If the new element is the largest, insert it at the end
+    if (j < INDEX_NODE->counter_keys + 1)
+    {
+        temp_keys[j] = key;
+    }
+    int mid = (Data_Node->record_counter + 1) / 2;
+    Data_Node->record_counter = 0;
+    *ins_key = temp_keys[mid];
+    for (i = 0; i < mid; i++)
+    {   if(Data_Node->Records[i].id != key){
+            Data_Node->record_counter++;
+        }
+    }
+    j=0;
+    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
+    {
+        if(Data_Node->Records[i].id != key){
+        
+            newdata->Records[j] = Data_Node->Records[i];
+            newdata->record_counter;
+            j++;
+        }
+    }
+    if(temp_keys[mid]<key){
+        CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
+        *ins_index--;
+    }
+    printf("Key=%d\n",*ins_index);
+
+    //CALL_OR_EXIT(BF_UnpinBlock(block1));
+    return ;
+
+
+
+
+
+
+
+
+
+
+
+    // int mid=Data_Node->record_counter/2;
+    // printf("mid = %d\n",mid);
+    // *ins_key=Data_Node->Records[mid].id;//return mid
+    // if (key > (*ins_key))
+    // {   *block = last_block_num + 1;
+    //     if (key<Data_Node->Records[mid+1].id)
+    //     {
+    //         *ins_key=key;
+    //     }
+    // }
+    // int j=0;
+    // printf("In split data ins_key = %d\n",*ins_key);
+    // for (int i = mid; i < Data_Node->record_counter; i++)
+    // {
+    //     printf("GG\n");
+    //     newdata->Records[j]=Data_Node->Records[i];
+    //     // Data_Node.Records[i]=NULL;
+    //     newdata->record_counter++;
+    //     Data_Node->record_counter--;
+    //     j++;
+    // }
   
 
-    newdata->NextDataBlockNum = Data_Node->NextDataBlockNum;
-    int new_block_id;
-    BF_GetBlockCounter(*fd,&new_block_id);
-    *ins_index = new_block_id - 1;
-    Data_Node->NextDataBlockNum = new_block_id - 1;
-    //sort
+    // newdata->NextDataBlockNum = Data_Node->NextDataBlockNum;
+    // int new_block_id;
+    // BF_GetBlockCounter(*fd,&new_block_id);
+    // *ins_index = new_block_id - 1;
+    // Data_Node->NextDataBlockNum = new_block_id - 1;
+    // //sort
 }
 
 void print_data(int *fd, int root_block_num){

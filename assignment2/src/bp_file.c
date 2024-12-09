@@ -106,13 +106,13 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     BF_Block* block2;
     BP_INDEX = create_index_node(&file_desc,1,1,block1);
     bplus_info->root = last_block_num;
-    BP_DATA=create_data_node(&file_desc);
+    BP_DATA=create_root_data_node(&file_desc);
     BP_DATA->Records[0] = record;
     BP_INDEX->keys[0] = record.id;
     BP_INDEX->pointers[1] = last_block_num;
-    printf("Before %d\n", BP_DATA->record_counter);
-    BP_DATA->record_counter++;
-    printf("After %d\n", BP_DATA->record_counter);
+    //printf("Before %d\n", BP_DATA->record_counter);
+    //BP_DATA->record_counter++;
+    //printf("After %d\n", BP_DATA->record_counter);
     BP_INDEX->counter_keys = 1;
     //unpin data block
     //BF_Block_SetDirty(block1);
@@ -141,11 +141,11 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
       //printf("PROBLEM\n");
       return -1;
     }
-    
-    CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block,block2));
+    printf("Ins_block = %d , last_block_counter = %d\n",*ins_block,last_block_num);
+    CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block ,block2));
     data = BF_Block_GetData(block2);
     BP_DATA = (BPLUS_DATA_NODE*) data;
-    printf("After %d\n", BP_DATA->record_counter);
+    //printf("After %d\n", BP_DATA->record_counter);
     int i;
     printf("New loop\n");
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
@@ -162,6 +162,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
         BP_DATA->Records[i + 1] = record;
         BP_DATA->record_counter++;
         // printf("in correct positiob\n");
+        printf("Rec = %d,Rec = %d,Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id,BP_DATA->Records[2].id,BP_DATA->Records[3].id);
         break; // Exit the loop as the insertion is complete
       }
     }
@@ -170,11 +171,11 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     if (i < 0)
     {
 
-    printf("THIS IS the case where value2 is smaller than all elements\n");
+    //printf("THIS IS the case where value2 is smaller than all elements\n");
      
       BP_DATA->Records[0] = record;
       BP_DATA->record_counter++;
-       printf("Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id);
+      
     }
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);

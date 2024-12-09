@@ -44,13 +44,13 @@ void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2) {
     int i;
     for (i = INDEX_NODE->counter_keys; i >= 0; i--)
     {
-        if (value2 < INDEX_NODE->keys[i])
+        if (value2 < INDEX_NODE->keys[i]&& INDEX_NODE->keys[i]!= -1)
         {
             // Shift keys and pointers to the right to make space
             INDEX_NODE->keys[i + 1] = INDEX_NODE->keys[i];
             INDEX_NODE->pointers[i + 2] = INDEX_NODE->pointers[i+1];
         }
-        else
+        else if(INDEX_NODE->keys[i]!= -1)
         {
             // Insert the new value at the correct position
             INDEX_NODE->keys[i + 1] = value2;
@@ -75,10 +75,10 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     void *data;
     BF_Block_Init(&dataBlock);
     //if seg fault look first!!!!////////////////////////////////////////////////////////////
-    if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key && INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] != -1)
+    if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key && INDEX_NODE->pointers[(INDEX_NODE->counter_keys)] != -1 && INDEX_NODE->keys[(INDEX_NODE->counter_keys)] != -1)
     {
         printf("INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] = %d < key = %d\n", INDEX_NODE->keys[(INDEX_NODE->counter_keys) -1], key);
-        i = (INDEX_NODE->counter_keys) - 1;
+        i = (INDEX_NODE->counter_keys);
     }
     else
     {
@@ -86,17 +86,15 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
         for (i = 0; i < INDEX_NODE->counter_keys; i++)
         {
             if (INDEX_NODE->keys[i] > key)
-            {
-                if(i!=0){printf("i = %d\n",i);}
-                
+            {   
                 break;
             }
         }
-    } 
+    }
     // i holds the pointer to the block we must search
     //IF THERE IS NO DATA BLOCK
+    
     if(INDEX_NODE->pointers[i] == -1){
-        printf("Sec1\n");
         BPLUS_DATA_NODE *Data_Node = create_data_node(fd);
         *block = last_block_num;
         INDEX_NODE->pointers[i] = last_block_num;
@@ -122,9 +120,11 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
         else if (!is_full_index(INDEX_NODE))
         {
             //printf("Doesnt fit\n");
-            *block = INDEX_NODE->pointers[i];
+            *ins_index = INDEX_NODE->pointers[i];
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
+            *block = *ins_index;
+            //printf("ins_index = %d,ins_key = %d\n",*ins_index,*ins_key);
             Order_Keys(INDEX_NODE,*ins_index,*ins_key);
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);
             BF_Block_SetDirty(dataBlock);
@@ -279,11 +279,12 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *i
 
     memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
     memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
-    INDEX_NODE->counter_keys = 0;
+    
 
     INDEX_NODE->pointers[0] = temp_pointers[0];
     int mid = (INDEX_NODE->counter_keys + 1) / 2;
     *ins_key = temp_keys[mid]; // return mid
+    INDEX_NODE->counter_keys = 0;
 
     for (i = 0; i < mid; i++)
     {
