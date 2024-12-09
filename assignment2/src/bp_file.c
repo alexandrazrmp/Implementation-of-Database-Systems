@@ -179,6 +179,44 @@ printf("file_desc: %d\n", file_desc);  // Integer value
 
 int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
 {  
-  *record=NULL;
+
+  if (bplus_info->root == -1) {
+    // If the root is -1, the tree is empty.
+    printf("B+ Tree is empty.\n");
+    *record = NULL;
+    return -1;
+  }
+
+  int current_block_num = bplus_info->root;
+  BF_Block *block;
+  BF_Block_Init(&block);
+  BPLUS_INDEX_NODE *BP_INFO;
+  
+  while(true){
+
+    CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
+    void *data = BF_Block_GetData(block);
+    BP_INFO = data;
+
+
+    int i;
+    for ( i = BP_INFO->counter_keys; i >= 0; i--)
+    {
+
+    }
+
+
+    
+    if(BP_INFO->leaf){
+      break;
+    }
+
+
+
+  }
+
+
+
+  // *record=NULL;
   return 0;
 }
