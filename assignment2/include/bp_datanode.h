@@ -22,6 +22,6 @@ bool is_full_data(BPLUS_DATA_NODE* BP_DATA);
 
 void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* block, int* ins_index, int* ins_key,int key,int* fd);
 
-void print_data(int fd, int root_block_num);
+void print_data(int *fd, int root_block_num);
 
 #endif 

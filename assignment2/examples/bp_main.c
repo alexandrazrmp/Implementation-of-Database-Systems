@@ -33,7 +33,8 @@ int main()
   int fd;
   BPLUS_INFO* BP_INFO= BP_OpenFile(FILE_NAME,&fd);
 
-  //print_data(fd,BP_INFO->root);
+  print_index(&fd,BP_INFO->root);
+  // print_data(&fd,BP_INFO->root);
 
   ////////////////////////////////////////////////
   
@@ -45,10 +46,10 @@ void insertEntries(){
   int file_desc;
   BPLUS_INFO* info = BP_OpenFile(FILE_NAME, &file_desc);
   Record record;
-  for (int i = 0; i < RECORDS_NUM; i++)
+  for (int i = 0; i < 2; i++)
   {
     record = randomRecord();
-    printf("record %d %s \n",record.id, record.name);
+    printf("%d record %d %s \n",i,record.id, record.name);
     BP_InsertEntry(file_desc,info, record); //SEGFAULT AFTER RECORDS = 3
     //printf("INSERTED ENTRY \n");
   }

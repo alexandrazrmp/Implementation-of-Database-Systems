@@ -164,10 +164,11 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return 0;
         }
-        else
+        else    //index node and data node full
         {
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
-            split_index(INDEX_NODE, block, ins_index, ins_key, fd);
+
+            split_index(INDEX_NODE, block, ins_index, ins_key, fd);//new index node is not leaf
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return -1; // pointer to index node to
@@ -176,6 +177,7 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     // If we still need to go down
     else if (!INDEX_NODE->leaf && !INDEX_NODE->root)
     {
+        //printf("I was right\n");
         BPLUS_INDEX_NODE *NEXT_INDEX;
         int ret; // Search return value
         int value1, value2;
@@ -242,6 +244,8 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *i
 {
 
     BF_Block *block1;
+    //if (!leaf_flag) BPLUS_INDEX_NODE *newindex = create_index_node(fd, INDEX_NODE->root, false, block1); 
+    //else
     BPLUS_INDEX_NODE *newindex = create_index_node(fd, INDEX_NODE->root, INDEX_NODE->leaf, block1);
     int key = *ins_key;
     int index = *ins_index;

@@ -65,7 +65,7 @@ BPLUS_INFO* BP_OpenFile(char *fileName, int *file_desc)
   data = BF_Block_GetData(block);
   bpInfo = data;
   CALL_OR_EXIT(BF_GetBlockCounter(*file_desc,&last_block_num));
-  last_block_num--;
+  last_block_num--; //last block is getblockcounter -1
   return bpInfo;
 }
 
@@ -98,6 +98,8 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
   ins_block = malloc(sizeof(int));
   temp1 = malloc(sizeof(int));
   temp2 = malloc(sizeof(int));
+
+
   //if we have no root
   if(bplus_info->root==-1){
     BF_Block* block1;
@@ -108,7 +110,9 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     BP_DATA->Records[0] = record;
     BP_INDEX->keys[0] = record.id;
     BP_INDEX->pointers[1] = last_block_num;
-    BP_DATA->record_counter = 1;
+    printf("Before %d\n", BP_DATA->record_counter);
+    BP_DATA->record_counter++;
+    printf("After %d\n", BP_DATA->record_counter);
     BP_INDEX->counter_keys = 1;
     //unpin data block
     //BF_Block_SetDirty(block1);
@@ -128,19 +132,20 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 
 //TO DELETE
 
-printf("record.id: %d\n", record.id);  // Integer value
-printf("file_desc: %d\n", file_desc);  // Integer value
+// printf("record.id: %d\n", record.id);  // Integer value
+// printf("file_desc: %d\n", file_desc);  // Integer value
 
 //END OF TO DELETE
 
     if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2) != 0){
-      printf("PROBLEM\n");
+      //printf("PROBLEM\n");
       return -1;
     }
-        printf("3\n");
+    
     CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block,block2));
     data = BF_Block_GetData(block2);
     BP_DATA = (BPLUS_DATA_NODE*) data;
+    printf("After %d\n", BP_DATA->record_counter);
     int i;
     printf("New loop\n");
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
@@ -156,6 +161,7 @@ printf("file_desc: %d\n", file_desc);  // Integer value
         // Insert the new value at the correct position
         BP_DATA->Records[i + 1] = record;
         BP_DATA->record_counter++;
+        // printf("in correct positiob\n");
         break; // Exit the loop as the insertion is complete
       }
     }
@@ -165,9 +171,10 @@ printf("file_desc: %d\n", file_desc);  // Integer value
     {
 
     printf("THIS IS the case where value2 is smaller than all elements\n");
-
+     
       BP_DATA->Records[0] = record;
       BP_DATA->record_counter++;
+       printf("Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id);
     }
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);

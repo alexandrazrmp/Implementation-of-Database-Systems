@@ -62,7 +62,7 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     //sort
 }
 
-void print_data(int fd, int root_block_num){
+void print_data(int *fd, int root_block_num){
 
     BF_Block *block;
     BF_Block_Init(&block);
@@ -70,7 +70,7 @@ void print_data(int fd, int root_block_num){
     //traverse the tree to find the most left index in the last level (leaf level)
     int current_block_num = root_block_num;
     while (true) {
-        CALL_OR_EXIT(BF_GetBlock(fd, current_block_num, block));
+        CALL_OR_EXIT(BF_GetBlock(*fd, current_block_num, block));
         void *data = BF_Block_GetData(block);
         BPLUS_INDEX_NODE *index_node = (BPLUS_INDEX_NODE *)data;
         
@@ -84,7 +84,7 @@ void print_data(int fd, int root_block_num){
     }
 
     while (current_block_num != -1) {
-        CALL_OR_EXIT(BF_GetBlock(fd, current_block_num, block));
+        CALL_OR_EXIT(BF_GetBlock(*fd, current_block_num, block));
         void *data = BF_Block_GetData(block);
         BPLUS_DATA_NODE *data_node = (BPLUS_DATA_NODE *)data;
 
