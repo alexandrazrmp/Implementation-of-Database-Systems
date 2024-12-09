@@ -48,7 +48,9 @@ void insertEntries(){
   for (int i = 0; i < RECORDS_NUM; i++)
   {
     record = randomRecord();
-    BP_InsertEntry(file_desc,info, record);
+    printf("record %d %s \n",record.id, record.name);
+    BP_InsertEntry(file_desc,info, record); //SEGFAULT AFTER RECORDS = 3
+    //printf("INSERTED ENTRY \n");
   }
   BP_CloseFile(file_desc,info);
   BF_Close();

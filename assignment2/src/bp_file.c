@@ -101,7 +101,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
   //if we have no root
   if(bplus_info->root==-1){
     BF_Block* block1;
-    //BF_Block* block2;
+    BF_Block* block2;
     BP_INDEX = create_index_node(&file_desc,1,1,block1);
     bplus_info->root = last_block_num;
     BP_DATA=create_data_node(&file_desc);
@@ -111,7 +111,10 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     BP_DATA->record_counter = 1;
     BP_INDEX->counter_keys = 1;
     //unpin data block
+    //BF_Block_SetDirty(block1);
+    //BF_Block_SetDirty(block2);
     //CALL_OR_EXIT(BF_UnpinBlock(block1));
+    //CALL_OR_EXIT(BF_UnpinBlock(block2));
     return 0;
   }
   else{
@@ -122,9 +125,19 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     CALL_OR_EXIT(BF_GetBlock(file_desc,bplus_info->root,block1));
     void* data = BF_Block_GetData(block1);
     BP_INDEX = (BPLUS_INDEX_NODE*)data;
+
+//TO DELETE
+
+printf("record.id: %d\n", record.id);  // Integer value
+printf("file_desc: %d\n", file_desc);  // Integer value
+
+//END OF TO DELETE
+
     if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2) != 0){
+      printf("PROBLEM\n");
       return -1;
     }
+        printf("3\n");
     CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block,block2));
     data = BF_Block_GetData(block2);
     BP_DATA = (BPLUS_DATA_NODE*) data;
@@ -132,7 +145,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     printf("New loop\n");
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
     {
-      printf("IS_LEAF = %d\n",BP_INDEX->leaf);
+      printf("INDEX->records = %d\n",BP_DATA->record_counter);
       if (record.id < BP_DATA->Records[i].id)
       {
         // Shift keys and pointers to the right to make space
@@ -146,9 +159,13 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
         break; // Exit the loop as the insertion is complete
       }
     }
+    printf("end of loop!!!\n");
     // Handle the case where value2 is smaller than all elements
     if (i < 0)
     {
+
+    printf("THIS IS the case where value2 is smaller than all elements\n");
+
       BP_DATA->Records[0] = record;
       BP_DATA->record_counter++;
     }

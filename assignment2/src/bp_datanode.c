@@ -9,7 +9,7 @@
 
 
 BPLUS_DATA_NODE* create_data_node(int *fd){
-    BF_Block *block;
+    BF_Block* block;
     BPLUS_DATA_NODE* BP_INFO;
     void* data;
     BF_Block_Init(&block);
