@@ -42,6 +42,7 @@ bool is_full_index(BPLUS_INDEX_NODE *BP_INFO)
 
 void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2) {
     int i;
+    //Shift is not right
     for (i = INDEX_NODE->counter_keys; i >= 0; i--)
     {
         if (value2 < INDEX_NODE->keys[i]&& INDEX_NODE->keys[i]!= -1)
@@ -52,6 +53,7 @@ void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2) {
         }
         else if(INDEX_NODE->keys[i]!= -1)
         {
+            printf("Value1 = %d\n",value1);
             // Insert the new value at the correct position
             INDEX_NODE->keys[i + 1] = value2;
             INDEX_NODE->pointers[i + 2] = value1;
@@ -121,9 +123,9 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
         {
             //printf("Doesnt fit\n");
             *ins_index = INDEX_NODE->pointers[i];
+            *block = *ins_index;
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
-            *block = *ins_index;
             //printf("ins_index = %d,ins_key = %d\n",*ins_index,*ins_key);
             Order_Keys(INDEX_NODE,*ins_index,*ins_key);
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);

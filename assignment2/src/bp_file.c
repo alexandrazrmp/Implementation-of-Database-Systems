@@ -162,10 +162,10 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
         BP_DATA->Records[i + 1] = record;
         BP_DATA->record_counter++;
         // printf("in correct positiob\n");
-        printf("Rec = %d,Rec = %d,Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id,BP_DATA->Records[2].id,BP_DATA->Records[3].id);
+       
         break; // Exit the loop as the insertion is complete
       }
-    }
+    } 
     printf("end of loop!!!\n");
     // Handle the case where value2 is smaller than all elements
     if (i < 0)
@@ -177,6 +177,8 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
       BP_DATA->record_counter++;
       
     }
+    //printf("Index node-> %d\n",BP_INDEX->pointers[1]);
+    printf("Rec = %d,Rec = %d,Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id,BP_DATA->Records[2].id,BP_DATA->Records[3].id);
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
     CALL_OR_EXIT(BF_UnpinBlock(block1));

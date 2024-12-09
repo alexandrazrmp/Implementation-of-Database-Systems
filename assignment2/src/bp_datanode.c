@@ -90,9 +90,10 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
             j++;
         }
     }
+    CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
+    *ins_index--;
     if(temp_keys[mid]<key){
-        CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
-        *ins_index--;
+        *block = *ins_index;
     }
     printf("Key=%d\n",*ins_index);
 
