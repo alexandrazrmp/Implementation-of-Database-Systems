@@ -51,6 +51,8 @@ void insertEntries(){
     record = randomRecord();
     printf("%d record %d %s \n",i,record.id, record.name);
     BP_InsertEntry(file_desc,info, record); //SEGFAULT AFTER RECORDS = 3
+  
+
     //printf("INSERTED ENTRY \n");
   }
   //BP_CloseFile(file_desc,info);

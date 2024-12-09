@@ -209,21 +209,40 @@ int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
     int i;
     for ( i = BP_INFO->counter_keys; i >= 0; i--)
     {
-
+      if (BP_INFO->keys[i]>value)
+      {
+        break;
+      }
+      
     }
-
-
+    if (i<0)
+    {
+      current_block_num=BP_INFO->pointers[0];
+    }else{
+      current_block_num=BP_INFO->pointers[i+1];
+    }
     
     if(BP_INFO->leaf){
       break;
     }
 
-
-
   }
 
+  BPLUS_DATA_NODE* DATA_NODE;
+  CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
+  void *data = BF_Block_GetData(block);
+  DATA_NODE = data;
 
 
-  // *record=NULL;
-  return 0;
+  for (int i = 0; i < DATA_NODE->record_counter; i++)
+  {
+    if (DATA_NODE->Records[i].id == value){
+      
+      **record = DATA_NODE->Records[i];
+      return 0;
+    } 
+  }
+  
+
+  return -1;
 }
