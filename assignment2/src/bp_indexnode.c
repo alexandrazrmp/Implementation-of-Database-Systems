@@ -127,6 +127,7 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
             //printf("ins_index = %d,ins_key = %d\n",*ins_index,*ins_key);
+            *ins_index=*ins_index -1;
             Order_Keys(INDEX_NODE,*ins_index,*ins_key);
             //printf("INdex_>keys = %d\n",INDEX_NODE->counter_keys);
             BF_Block_SetDirty(dataBlock);
@@ -349,9 +350,9 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
 
     memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
     memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
+    int mid = (INDEX_NODE->counter_keys + 1) / 2;
     INDEX_NODE->counter_keys = 0;
     INDEX_NODE->pointers[0] = temp_pointers[0];
-    int mid = (INDEX_NODE->counter_keys + 1) / 2;
     key = temp_keys[mid]; // return mid
 
     for (i = 0; i < mid; i++)
@@ -381,8 +382,8 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     newROOT->pointers[1] = index - 1;
     BP_INFO->root = index;
     BP_INFO->max_height++;
-    CALL_OR_EXIT(BF_UnpinBlock(block_index));
-    CALL_OR_EXIT(BF_UnpinBlock(block_root));
+    //CALL_OR_EXIT(BF_UnpinBlock(block_index));
+    //CALL_OR_EXIT(BF_UnpinBlock(block_root));
 
     return 0;
 }

@@ -141,16 +141,17 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
       //printf("PROBLEM\n");
       return -1;
     }
-    printf("Ins_block = %d , last_block_counter = %d\n",*ins_block,last_block_num);
+    //printf("Ins_block = %d , last_block_counter = %d\n",*ins_block,last_block_num);
     CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block ,block2));
     data = BF_Block_GetData(block2);
     BP_DATA = (BPLUS_DATA_NODE*) data;
     //printf("After %d\n", BP_DATA->record_counter);
     int i;
-    printf("New loop\n");
+    //printf("New loop\n");
+    //printf("INDEX->records = %d\n",BP_DATA->record_counter);
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
     {
-      printf("INDEX->records = %d\n",BP_DATA->record_counter);
+      
       if (record.id < BP_DATA->Records[i].id)
       {
         // Shift keys and pointers to the right to make space
@@ -166,7 +167,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
         break; // Exit the loop as the insertion is complete
       }
     } 
-    printf("end of loop!!!\n");
+    //printf("end of loop!!!\n");
     // Handle the case where value2 is smaller than all elements
     if (i < 0)
     {
@@ -177,8 +178,8 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
       BP_DATA->record_counter++;
       
     }
-    //printf("Index node-> %d\n",BP_INDEX->pointers[1]);
-    printf("Rec = %d,Rec = %d,Rec = %d,Rec = %d\n",BP_DATA->Records[0].id,BP_DATA->Records[1].id,BP_DATA->Records[2].id,BP_DATA->Records[3].id);
+    for(i = 0;i<BP_DATA->record_counter;i++){printf("Rec = %d,",BP_DATA->Records[i].id);}
+    printf("\n");
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
     CALL_OR_EXIT(BF_UnpinBlock(block1));

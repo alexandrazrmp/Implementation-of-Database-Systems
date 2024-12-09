@@ -73,30 +73,39 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
         temp_keys[j] = key;
     }
     int mid = (Data_Node->record_counter + 1) / 2;
+    int temp = Data_Node->record_counter;
     Data_Node->record_counter = 0;
     *ins_key = temp_keys[mid];
+    int z=0;
     for (i = 0; i < mid; i++)
-    {   if(Data_Node->Records[i].id != key){
+    {   if(temp_keys[i] != key){
             Data_Node->record_counter++;
+        }
+        else{
+            z=1;
         }
     }
     j=0;
-    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
+    printf("Key = %d\n",key);
+    newdata->record_counter = 0;
+    for (i = mid ; i <=temp; i++)
     {
-        if(Data_Node->Records[i].id != key){
-        
-            newdata->Records[j] = Data_Node->Records[i];
-            newdata->record_counter;
+        if(temp_keys[i] != key){
+            //printf("record->%d\n",Data_Node->Records[i-z].id);
+            newdata->Records[j] = Data_Node->Records[i-z];
+            newdata->record_counter+=1;
             j++;
         }
+        else{
+            z =1;
+        }
     }
+    printf("%d\n",newdata->record_counter);
     CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
-    *ins_index--;
     if(temp_keys[mid]<key){
-        *block = *ins_index;
+        *block = *ins_index - 1;
     }
-    printf("Key=%d\n",*ins_index);
-
+    //BF_Block_SetDirty(block1);
     //CALL_OR_EXIT(BF_UnpinBlock(block1));
     return ;
 
