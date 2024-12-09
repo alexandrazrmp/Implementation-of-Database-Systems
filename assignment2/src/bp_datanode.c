@@ -18,6 +18,7 @@ BPLUS_DATA_NODE* create_data_node(int *fd){
     BP_INFO = data;
     BP_INFO->record_counter = 0;
     BP_INFO->NextDataBlockNum = -1;
+    last_block_num++;
     BF_Block_SetDirty(block);
     return BP_INFO;
 }

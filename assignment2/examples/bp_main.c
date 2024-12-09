@@ -33,7 +33,7 @@ int main()
   int fd;
   BPLUS_INFO* BP_INFO= BP_OpenFile(FILE_NAME,&fd);
 
-  print_data(fd,BP_INFO->root);
+  //print_data(fd,BP_INFO->root);
 
   ////////////////////////////////////////////////
   
@@ -52,8 +52,8 @@ void insertEntries(){
     BP_InsertEntry(file_desc,info, record); //SEGFAULT AFTER RECORDS = 3
     //printf("INSERTED ENTRY \n");
   }
-  BP_CloseFile(file_desc,info);
-  BF_Close();
+  //BP_CloseFile(file_desc,info);
+  //BF_Close();
 }
 
 void findEntries(){

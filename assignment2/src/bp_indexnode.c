@@ -87,10 +87,13 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
         {
             if (INDEX_NODE->keys[i] > key)
             {
+                if(i!=0){printf("i = %d\n",i);}
+                
                 break;
             }
         }
-    } // i holds the pointer to the block we must search
+    } 
+    // i holds the pointer to the block we must search
     //IF THERE IS NO DATA BLOCK
     if(INDEX_NODE->pointers[i] == -1){
         printf("Sec1\n");
