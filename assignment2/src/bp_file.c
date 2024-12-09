@@ -32,9 +32,9 @@ int BP_CreateFile(char *fileName)
   CALL_OR_EXIT(BF_AllocateBlock(fd,block));
   data = BF_Block_GetData(block);
   BPLUS_INFO bpinfo;
-  bpinfo.max_height= 0;
+  //bpinfo.max_height= 0;
   bpinfo.root = -1;
-  bpinfo.data_size = BF_BLOCK_SIZE/sizeof(Record);
+  bpinfo.data_size = 4;
   bpinfo.index_size = 4;
 
   last_block_num++;
@@ -60,8 +60,8 @@ BPLUS_INFO* BP_OpenFile(char *fileName, int *file_desc)
   void* data;
   CALL_OR_EXIT(BF_OpenFile(fileName,file_desc));  //opening file
   CALL_OR_EXIT(BF_GetBlock(*file_desc,0,block));  //getting metadata of the first block
-  files[open_files] = *file_desc;
-  open_files++;
+  //files[open_files] = *file_desc;
+  //open_files++;
   data = BF_Block_GetData(block);
   bpInfo = data;
   CALL_OR_EXIT(BF_GetBlockCounter(*file_desc,&last_block_num));
@@ -95,18 +95,23 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
   int* ins_block;
   int* temp1;
   int* temp2;
+  ins_block = malloc(sizeof(int));
+  temp1 = malloc(sizeof(int));
+  temp2 = malloc(sizeof(int));
   //if we have no root
   if(bplus_info->root==-1){
     BF_Block* block1;
     //BF_Block* block2;
-    BP_INDEX = create_index_node(&file_desc,true,false,block1);
+    BP_INDEX = create_index_node(&file_desc,1,1,block1);
     bplus_info->root = last_block_num;
     BP_DATA=create_data_node(&file_desc);
     BP_DATA->Records[0] = record;
     BP_INDEX->keys[0] = record.id;
     BP_INDEX->pointers[1] = last_block_num;
+    BP_DATA->record_counter = 1;
+    BP_INDEX->counter_keys = 1;
     //unpin data block
-    CALL_OR_EXIT(BF_UnpinBlock(block1));
+    //CALL_OR_EXIT(BF_UnpinBlock(block1));
     return 0;
   }
   else{
@@ -116,16 +121,18 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     BF_Block_Init(&block2);
     CALL_OR_EXIT(BF_GetBlock(file_desc,bplus_info->root,block1));
     void* data = BF_Block_GetData(block1);
-    BP_INDEX = data;
+    BP_INDEX = (BPLUS_INDEX_NODE*)data;
     if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2) != 0){
-       return -1;
+      return -1;
     }
     CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block,block2));
     data = BF_Block_GetData(block2);
-    BP_DATA = data;
+    BP_DATA = (BPLUS_DATA_NODE*) data;
     int i;
+    printf("New loop\n");
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
     {
+      printf("IS_LEAF = %d\n",BP_INDEX->leaf);
       if (record.id < BP_DATA->Records[i].id)
       {
         // Shift keys and pointers to the right to make space
@@ -135,6 +142,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
       {
         // Insert the new value at the correct position
         BP_DATA->Records[i + 1] = record;
+        BP_DATA->record_counter++;
         break; // Exit the loop as the insertion is complete
       }
     }
@@ -142,7 +150,12 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     if (i < 0)
     {
       BP_DATA->Records[0] = record;
+      BP_DATA->record_counter++;
     }
+    BF_Block_SetDirty(block1);
+    BF_Block_SetDirty(block2);
+    CALL_OR_EXIT(BF_UnpinBlock(block1));
+    CALL_OR_EXIT(BF_UnpinBlock(block2));
     return 0;
   }
 }

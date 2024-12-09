@@ -15,6 +15,7 @@ BPLUS_DATA_NODE* create_data_node(int *fd){
     BF_Block_Init(&block);
     CALL_OR_EXIT(BF_AllocateBlock(*fd,block));
     data = BF_Block_GetData(block);
+    BP_INFO = data;
     BP_INFO->record_counter = 0;
     BP_INFO->NextDataBlockNum = -1;
     BF_Block_SetDirty(block);
@@ -35,7 +36,7 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     int mid=Data_Node->record_counter/2;
     *ins_key=Data_Node->Records[mid].id;//return mid
     if (key > (*ins_key))
-    {
+    {   *block = last_block_num + 1;
         if (key<Data_Node->Records[mid+1].id)
         {
             *ins_key=key;
@@ -46,10 +47,11 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     {
         newdata->Records[j]=Data_Node->Records[i];
         // Data_Node.Records[i]=NULL;
+        newdata->record_counter++;
+        Data_Node->record_counter--;
         j++;
     }
-    newdata->record_counter=j;
-    Data_Node->record_counter=mid;
+  
 
     newdata->NextDataBlockNum = Data_Node->NextDataBlockNum;
     int new_block_id;
@@ -97,4 +99,3 @@ void print_data(int fd, int root_block_num){
     }
 
 }
-

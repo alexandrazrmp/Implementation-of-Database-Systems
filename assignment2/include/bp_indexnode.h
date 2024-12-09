@@ -4,10 +4,10 @@
 #include <bf.h>
 #include <bp_file.h>
 
-//mayro
+
 typedef struct
 {
-    int block_id;
+    int block_id;//the id of the block
     bool root; // if we are in root
     bool leaf; // if we in the last row of the tree
     int counter_keys; //Number of keys in the node
@@ -19,20 +19,23 @@ typedef struct
 
 }BPLUS_INDEX_NODE;
 
-
+//function to create a new index node 
 BPLUS_INDEX_NODE* create_index_node(int *fd,  bool is_root, bool is_leaf,BF_Block* block);
 
+// Function to check if an index node is full
 bool is_full_index(BPLUS_INDEX_NODE* BP_INDEX);
 
+// Function that inserts keys and pointers if the index node is not full in sorted order
 void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2);
 
+// Recursive function to search where to insert a key spliting where is necessary 
 int search(BPLUS_INDEX_NODE* INDEX_NODE,BPLUS_INFO* BP_INFO ,int key,int* fd,int* block, int *ins_index, int* ins_key);
 
+//function that splits the index node and the root index node
 int split_index(BPLUS_INDEX_NODE *INDEX_NODE,int* block, int* ins_index, int* ins_key,int* fd);
-
 int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *ins_key, int *fd);
-//void print_index(int fd, int root_block_num); 
 
+//printing function
 void print_index(int *fd, int root_block_num);
 
 #endif
