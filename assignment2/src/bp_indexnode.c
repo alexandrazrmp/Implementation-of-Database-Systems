@@ -12,32 +12,27 @@ BPLUS_INDEX_NODE *create_index_node(int *fd, bool is_root, bool is_leaf, BF_Bloc
 {
     BPLUS_INDEX_NODE *BP_INFO;
     void *data;
-
-    //initialize a block to hold the index node
     BF_Block_Init(&block);
-    CALL_OR_EXIT(BF_AllocateBlock(*fd, block));  // Allocate a new block in the file
+    CALL_OR_EXIT(BF_AllocateBlock(*fd, block));
     data = BF_Block_GetData(block);
-
-    //initialize the index node structure (number of keys , if it is root or leaf)
-    BP_INFO->block_id = last_block_num + 1;  // Assign a new block ID with the help of the global variable
+    BP_INFO = data;
+    // initialize the index node structure
+    BP_INFO->block_id = last_block_num+1;
     last_block_num++;
-    BP_INFO->counter_keys = 0;  
-    BP_INFO->root = is_root;    
-    BP_INFO->leaf = is_leaf;    
+    BP_INFO->counter_keys = 0;
+    BP_INFO->root = is_root;
+    BP_INFO->leaf = is_leaf;
 
-    // Initialize keys and pointers to -1 (empty state)
     memset(BP_INFO->keys, -1, sizeof(BP_INFO->keys));
     memset(BP_INFO->pointers, -1, sizeof(BP_INFO->pointers));
+    BF_Block_SetDirty(block); // maybe dirty
 
-    // Mark the block as modified
-    BF_Block_SetDirty(block);
-
-    return BP_INFO;  
+    return BP_INFO;
 }
 
 bool is_full_index(BPLUS_INDEX_NODE *BP_INFO)
 {
-    // A node is full if the number of keys are .....................
+
     if (BP_INFO->counter_keys == 4)
     {
         return true;
@@ -77,58 +72,60 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     BF_Block *dataBlock;
     void *data;
     BF_Block_Init(&dataBlock);
-
-//if seg fault look first!!!!////////////////////////////////////////////////////////////
-    // find the  pointer(i) to the block we must search
-    if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key) {
-        i = (INDEX_NODE->counter_keys) - 1;  
-    } else {
-        for (i = 0; i < INDEX_NODE->counter_keys; i++) {
-            if (INDEX_NODE->keys[i] > key) {
-                break;  
+    //if seg fault look first!!!!////////////////////////////////////////////////////////////
+    if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key)
+    {
+        i = (INDEX_NODE->counter_keys) - 1;
+    }
+    else
+    {
+        for (i = 0; i < INDEX_NODE->counter_keys; i++)
+        {
+            if (INDEX_NODE->keys[i] > key)
+            {
+                break;
             }
         }
-    }
-
-    //Handle the case where there is no data block at the pointer
-    if (INDEX_NODE->pointers[i] == -1) {
+    } // i holds the pointer to the block we must search
+    //IF THERE IS NO DATA BLOCK
+    if(INDEX_NODE->pointers[i] == -1){
         BPLUS_DATA_NODE *Data_Node = create_data_node(fd);
-        *block = last_block_num;  // Return the block ID of the new data node
-        return 0;  
+        *block = last_block_num;
+        return 0;
     }
-
-    // get the data block for the pointer
     CALL_OR_EXIT(BF_GetBlock(*fd, INDEX_NODE->pointers[i], dataBlock));
     data = BF_Block_GetData(dataBlock);
 
-    //Handle the case where the node is both a root and a leaf
-    //this happens when we insert the first indexes
-    if (INDEX_NODE->leaf && INDEX_NODE->root) {
-        BPLUS_DATA_NODE *Data_Node = (BPLUS_DATA_NODE *)data;
-
-        // Case 1: The key can be inserted directly (the data node is not full)
-        if (!is_full_data(Data_Node)) {
+    if (INDEX_NODE->leaf && INDEX_NODE->root){
+        BPLUS_DATA_NODE *Data_Node;
+        Data_Node = data;
+        // Case 1 the entry fits
+        if (!is_full_data(Data_Node))
+        {
+            printf("Fits\n");
             *block = INDEX_NODE->pointers[i];
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return 0;
+            // Case 2 index node not full but data is
         }
-        // Case 2: The data node is full, but the index node isn't full
-        else if (!is_full_index(INDEX_NODE)) {
+        else if (!is_full_index(INDEX_NODE))
+        {
+            printf("Doesnt fit\n");
+            *block = INDEX_NODE->pointers[i];
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
-            Order_Keys(INDEX_NODE, *ins_index, *ins_key);
+            Order_Keys(INDEX_NODE,*ins_index,*ins_key);
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return 0;
         }
-        // Case 3: Both the data and index nodes are full
-        //in this case we need to split the root 
-        else {
+        else
+        {
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
-            split_root(BP_INFO, INDEX_NODE, block, ins_index, ins_key, fd);
+            split_root(BP_INFO,INDEX_NODE, block, ins_index, ins_key, fd);
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
-            return 0;
+            return 0; // pointer to index node to
         }
     }
     // If we have reached final level of b-tree
@@ -136,118 +133,89 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     {
         BPLUS_DATA_NODE *Data_Node;
         Data_Node = data;
-        // Case 1: The key can be inserted directly (the data node is not full)
+        // Case 1 the entry fits
         if (!is_full_data(Data_Node))
         {
+             printf("Fits\n");
             *block = INDEX_NODE->pointers[i];
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return 0;
+            // Case 2 index node not full but data is
         }
-        // Case 2: The data node is full, but the index node isn't full
         else if (!is_full_index(INDEX_NODE))
         {
+            *block = INDEX_NODE->pointers[i];
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
             Order_Keys(INDEX_NODE,*ins_index,*ins_key);
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
             return 0;
         }
-        // Case 3: Both the data and index nodes are full
-        //in this case we need to split bith data and index node
         else
         {
             split_data(INDEX_NODE, Data_Node, block, ins_index, ins_key, key, fd);
             split_index(INDEX_NODE, block, ins_index, ins_key, fd);
             BF_Block_SetDirty(dataBlock);
             CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
-            return -1;
+            return -1; // pointer to index node to
         }
     }
-    // If we still need to go down (node is neither a leaf nor the root)
+    // If we still need to go down
     else if (!INDEX_NODE->leaf && !INDEX_NODE->root)
     {
-        BPLUS_INDEX_NODE *NEXT_INDEX; 
-        int ret; //the return value from the search function
-        int value1, value2; //Temporary variables to hold the new key and pointer
-
-        // Get the next index node from the current block's data
-        NEXT_INDEX = data; 
-
-        // Recursively call the search function on the next index node
+        BPLUS_INDEX_NODE *NEXT_INDEX;
+        int ret; // Search return value
+        int value1, value2;
+        NEXT_INDEX = data;
         ret = search(NEXT_INDEX, BP_INFO, key, fd, block, &value1, &value2);
-        
-    
         if (ret == 0)
         {
             return 0;
         }
         else
         {
-            //check if the current index node has space
             if (!is_full_index(INDEX_NODE)){
-
-                // Insert the new key and pointer into the root node
                 Order_Keys(INDEX_NODE,value1,value2);
-
-                //set dirty and unpin the block
                 BF_Block_SetDirty(dataBlock);
                 CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
                 return 0;
             }
-            // If the current index node is full
-            else{
-                // Split the node
-                split_index(INDEX_NODE, block, &value1, &value2, fd); 
-
-                // Update the insertion key and pointer for the parent node
+            else
+            {
+                split_index(INDEX_NODE, block, &value1, &value2, fd);
                 *ins_index = value1;
                 *ins_key = value2;
-
-                //set dirty and unpin the block     
-                BF_Block_SetDirty(dataBlock); 
-                CALL_OR_EXIT(BF_UnpinBlock(dataBlock)); 
-                return -1; // Indicate that we need to repeat the process
+                BF_Block_SetDirty(dataBlock);
+                CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
+                return -1;
             }
         }
     }
-    // If we are at the root
+    // we are at root
     else
     {
-        BPLUS_INDEX_NODE *NEXT_INDEX; 
-        int ret; //the return value from the search function
-        int value1, value2; //Temporary variables to hold the new key and pointer
-
-        // Get the next index node from the current block's data
-        NEXT_INDEX = data; 
-
-        // Recursively call the search function on the next index node
+        BPLUS_INDEX_NODE *NEXT_INDEX;
+        int ret; // Search return value
+        int value1, value2;
+        NEXT_INDEX = data;
         ret = search(NEXT_INDEX, BP_INFO, key, fd, block, &value1, &value2);
-        
         if (ret == 0)
         {
             return 0;
         }
         else
         {
-            // Check if the root node has space
             if (!is_full_index(INDEX_NODE)){
-
-                // Insert the new key and pointer into the root node
                 Order_Keys(INDEX_NODE,value1,value2);
-
-                //set dirty and unpin the block
                 BF_Block_SetDirty(dataBlock);
                 CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
                 return 0;
             }
-            // If the root node is full, it needs to be split
             else
             {
-                //Split the root 
+                // make new root using split root
                 split_root(BP_INFO, INDEX_NODE, block, ins_index, ins_key, fd);
-                
-                //set dirty and unpin the block
                 BF_Block_SetDirty(dataBlock);
                 CALL_OR_EXIT(BF_UnpinBlock(dataBlock));
                 return 0; // pointer to index node to
@@ -263,109 +231,24 @@ int split_index(BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *i
 
     BF_Block *block1;
     BPLUS_INDEX_NODE *newindex = create_index_node(fd, INDEX_NODE->root, INDEX_NODE->leaf, block1);
-    
-    // Store the key and index to be inserted
-    int key = *ins_key;
-    int index = *ins_index;
-
-    // Temporary arrays to hold the sorted keys and pointers after insertion
-    int temp_keys[INDEX_NODE->counter_keys + 1];    // Array to hold the result of the keys after the insertion
-    int temp_pointers[INDEX_NODE->counter_keys + 2]; // Array to hold the result of the pointers after the insertion
-    int i;    // Iterator for the original keys array
-    int j = 0;       // Iterator for the temporary keys array
-
-    // Insert all elements into the temporary arrays in sorted order
-    temp_pointers[0] = INDEX_NODE->keys[0]; // Initialize the first pointer
-    for (i = 0; i < INDEX_NODE->counter_keys; i++)
-    {
-        // Insert the new key and pointer in the correct position
-        if (key < INDEX_NODE->keys[i] && j == i)
-        {
-            temp_keys[j] = key; 
-            temp_pointers[j] = index;
-            j++;
-        }
-        // Copy the existing keys and pointers into the temporary arrays
-        temp_keys[j] = INDEX_NODE->keys[i];
-        temp_pointers[j + 1] = INDEX_NODE->pointers[i + 1];
-        j++;
-    }
-
-    // If the new key is larger than all existing keys, insert it at the end
-    if (j < INDEX_NODE->counter_keys + 1)
-    {
-        temp_keys[j] = key; 
-        temp_pointers[j + 1] = index;
-    }
-
-    //Set the keys and pointers of the original node with the value -1
-    memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
-    memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
-    INDEX_NODE->counter_keys = 0; // Reset the key counter for the current node
-
-    //Assign the first pointer to the index node because it will never change 
-    INDEX_NODE->pointers[0] = temp_pointers[0];
-
-    // Find the mid-point for splitting the keys
-    int mid = (INDEX_NODE->counter_keys + 1) / 2;
-    *ins_key = temp_keys[mid]; // Return the middle key to the parent
-
-    // Fill the left half of the keys and pointers in the original node
-    for (i = 0; i < mid; i++)
-    {
-        INDEX_NODE->keys[i] = temp_keys[i];
-        INDEX_NODE->pointers[i + 1] = temp_pointers[i + 1]; 
-        INDEX_NODE->counter_keys++;
-    }
-
-    // Fill the right half of the keys and pointers into the new index node
-    j = 0;
-    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
-    {
-        newindex->keys[j] = temp_keys[i];
-        newindex->pointers[j] = temp_pointers[i]; 
-        newindex->counter_keys++; 
-        j++;
-    }
-
-    // Assign the final pointer to the new node
-    newindex->pointers[j] = temp_pointers[i];
-
-    // Update the block counter and unpin the block for the new node
-    CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index)); 
-    *ins_index--;
-    CALL_OR_EXIT(BF_UnpinBlock(block1)); 
-
-    return 0; 
-}
-
-int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *ins_key, int *fd)
-{
-    BF_Block *block_root;
-    BF_Block *block_index;
-    BPLUS_INDEX_NODE *newindex = create_index_node(fd, false, INDEX_NODE->leaf, block_index);
-    
-    //store the value
     int key = *ins_key;
     int index = *ins_index;
 
     int temp_keys[INDEX_NODE->counter_keys + 1];     // Array to hold the result of the keys after the insertion
     int temp_pointers[INDEX_NODE->counter_keys + 2]; // Array to hold the result of the pointers after the insertion
-    int i;    // Iterator for the key array
-    int j = 0;  // Iterator for the temp_key array
+    int i;                                           // Iterator for the key array
+    int j = 0;                                       // Iterator for the temp_key array
 
-    // Insert all elements into the temporary arrays in sorted order
-    temp_pointers[0] = INDEX_NODE->keys[0]; // Initialize the first pointer
+    // Insert elements into temp maintaining the sorted order
+    temp_pointers[0] = INDEX_NODE->keys[0];
     for (i = 0; i < INDEX_NODE->counter_keys; i++)
     {
-        // Insert the new key and pointer in the correct position
         if (key < INDEX_NODE->keys[i] && j == i)
         {
-            temp_keys[j] = key; 
+            temp_keys[j] = key; // Insert the new element in sorted order
             temp_pointers[j] = index;
             j++;
         }
-        // Copy the existing keys and pointers into the temporary arrays
         temp_keys[j] = INDEX_NODE->keys[i];
         temp_pointers[j + 1] = INDEX_NODE->pointers[i + 1];
         j++;
@@ -378,17 +261,79 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
         temp_pointers[j + 1] = index;
     }
 
-    //Set the old node with the value -1 
     memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
     memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
     INDEX_NODE->counter_keys = 0;
 
-    //assign the first pointer to the index node because it will never change 
     INDEX_NODE->pointers[0] = temp_pointers[0];
-
-    //Find the mid-point for splitting the keys 
     int mid = (INDEX_NODE->counter_keys + 1) / 2;
-    key = temp_keys[mid]; 
+    *ins_key = temp_keys[mid]; // return mid
+
+    for (i = 0; i < mid; i++)
+    {
+        INDEX_NODE->keys[i] = temp_keys[i];
+        INDEX_NODE->pointers[i + 1] = temp_pointers[i + 1];
+        INDEX_NODE->counter_keys++;
+    }
+
+    j = 0;
+    for (i = mid + 1; i < INDEX_NODE->counter_keys; i++)
+    {
+        newindex->keys[j] = temp_keys[i];
+        newindex->pointers[j] = temp_pointers[i];
+        newindex->counter_keys++;
+        j++;
+    }
+    newindex->pointers[j] = temp_pointers[i];
+
+    CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
+    *ins_index--;
+    CALL_OR_EXIT(BF_UnpinBlock(block1));
+
+    return 0;
+}
+
+int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, int *ins_index, int *ins_key, int *fd)
+{
+    BF_Block *block_root;
+    BF_Block *block_index;
+    BPLUS_INDEX_NODE *newindex = create_index_node(fd, false, INDEX_NODE->leaf, block_index);
+    int key = *ins_key;
+    int index = *ins_index;
+
+    int temp_keys[INDEX_NODE->counter_keys + 1];     // Array to hold the result of the keys after the insertion
+    int temp_pointers[INDEX_NODE->counter_keys + 2]; // Array to hold the result of the pointers after the insertion
+    int i;                                           // Iterator for the key array
+    int j = 0;                                       // Iterator for the temp_key array
+
+    // Insert elements into temp maintaining the sorted order
+    temp_pointers[0] = INDEX_NODE->keys[0];
+    for (i = 0; i < INDEX_NODE->counter_keys; i++)
+    {
+        if (key < INDEX_NODE->keys[i] && j == i)
+        {
+            temp_keys[j] = key; // Insert the new element in sorted order
+            temp_pointers[j] = index;
+            j++;
+        }
+        temp_keys[j] = INDEX_NODE->keys[i];
+        temp_pointers[j + 1] = INDEX_NODE->pointers[i + 1];
+        j++;
+    }
+
+    // If the new element is the largest, insert it at the end
+    if (j < INDEX_NODE->counter_keys + 1)
+    {
+        temp_keys[j] = key;
+        temp_pointers[j + 1] = index;
+    }
+
+    memset(INDEX_NODE->keys, -1, sizeof(INDEX_NODE->keys));
+    memset(INDEX_NODE->pointers, -1, sizeof(INDEX_NODE->pointers));
+    INDEX_NODE->counter_keys = 0;
+    INDEX_NODE->pointers[0] = temp_pointers[0];
+    int mid = (INDEX_NODE->counter_keys + 1) / 2;
+    key = temp_keys[mid]; // return mid
 
     for (i = 0; i < mid; i++)
     {
@@ -410,12 +355,13 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     CALL_OR_EXIT(BF_GetBlockCounter(*fd, &index));
 
     BPLUS_INDEX_NODE *newROOT = create_index_node(fd, true, false, block_root);
-    INDEX_NODE->root = 0;
+    INDEX_NODE->root = 0; 
     newROOT->keys[0] = key;
     newROOT->counter_keys = 1;
     newROOT->pointers[0] = INDEX_NODE->block_id;
     newROOT->pointers[1] = index - 1;
     BP_INFO->root = index;
+    BP_INFO->max_height++;
     CALL_OR_EXIT(BF_UnpinBlock(block_index));
     CALL_OR_EXIT(BF_UnpinBlock(block_root));
 
