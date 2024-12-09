@@ -328,17 +328,20 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     int j = 0;                                       // Iterator for the temp_key array
 
     // Insert elements into temp maintaining the sorted order
-    temp_pointers[0] = INDEX_NODE->keys[0];
+    temp_pointers[0] = INDEX_NODE->pointers[0];
     for (i = 0; i < INDEX_NODE->counter_keys; i++)
     {
         if (key < INDEX_NODE->keys[i] && j == i)
         {
+            printf("gamiesaiiiiiiiiii %d  = %d         %d \n",j+1 ,temp_pointers[j +1], index);
             temp_keys[j] = key; // Insert the new element in sorted order
-            temp_pointers[j] = index;
+            temp_pointers[j+1] = index;
             j++;
+            
         }
         temp_keys[j] = INDEX_NODE->keys[i];
         temp_pointers[j + 1] = INDEX_NODE->pointers[i + 1];
+        printf("gamiesaiiiiiiiiii %d  = %d \n",j + 1,temp_pointers[j + 1]);
         j++;
     }
 
