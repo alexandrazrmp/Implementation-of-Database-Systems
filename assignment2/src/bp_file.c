@@ -183,52 +183,52 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 
 int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
 {  
-    if (bplus_info == NULL || bplus_info->root == -1) {
-        // If bplus_info is null or the root is -1, the tree is empty.
-        printf("B+ Tree is empty.\n");
-        *record = NULL;
-        return -1;
-    }
-    int current_block_num = bplus_info->root;
-    BF_Block *block;
-    BF_Block_Init(&block);
-    while (true) {
-        CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
-        void *data = BF_Block_GetData(block);
-        BPLUS_INDEX_NODE *BP_INFO = (BPLUS_INDEX_NODE *)data;
-        // Traverse keys to find the correct child
-        int i;
-        for (i = 0; i < BP_INFO->counter_keys; i++) {
-            if (BP_INFO->keys[i] > value) {
-                break;
-            }
-        }
-        current_block_num = BP_INFO->pointers[i];
-
-        if (BP_INFO->leaf) {
-            break;
-        }
-        BF_UnpinBlock(block); // Release block for non-leaf nodes
-    }
-
-    // Handle leaf node
+  if (bplus_info == NULL || bplus_info->root == -1) {
+    // If bplus_info is null or the root is -1, the tree is empty.
+    printf("B+ Tree is empty.\n");
+    *record = NULL;
+    return -1;
+  }
+  int current_block_num = bplus_info->root;
+  BF_Block *block;
+  BF_Block_Init(&block);
+  while (true) {
     CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
     void *data = BF_Block_GetData(block);
-    BPLUS_DATA_NODE *DATA_NODE = (BPLUS_DATA_NODE *)data;
-    for (int i = 0; i < DATA_NODE->record_counter; i++) {
-        if (DATA_NODE->Records[i].id == value) {
-            *record = malloc(sizeof(Record));
-            if (*record == NULL) {
-                printf("Memory allocation failed\n");
-                BF_UnpinBlock(block);
-                return -1;
-            }
-            **record = DATA_NODE->Records[i];
-            BF_UnpinBlock(block);
-            return 0;
-        }
+    BPLUS_INDEX_NODE *BP_INFO = (BPLUS_INDEX_NODE *)data;
+    // Traverse keys to find the correct child
+    int i;
+    for (i = 0; i < BP_INFO->counter_keys; i++) {
+      if (BP_INFO->keys[i] > value) {
+        break;
+      }
     }
-    *record = NULL;
-    BF_UnpinBlock(block);
-    return -1;
+    current_block_num = BP_INFO->pointers[i];
+
+    if (BP_INFO->leaf) {
+      break;
+    }
+    BF_UnpinBlock(block); // Release block for non-leaf nodes
+  }
+
+  // Handle leaf node
+  CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
+  void *data = BF_Block_GetData(block);
+  BPLUS_DATA_NODE *DATA_NODE = (BPLUS_DATA_NODE *)data;
+  for (int i = 0; i < DATA_NODE->record_counter; i++) {
+    if (DATA_NODE->Records[i].id == value) {
+      *record = malloc(sizeof(Record));
+      if (*record == NULL) {
+        printf("Memory allocation failed\n");
+        BF_UnpinBlock(block);
+        return -1;
+      }
+      **record = DATA_NODE->Records[i];
+      BF_UnpinBlock(block);
+      return 0;
+    }
+  }
+  *record = NULL;
+  BF_UnpinBlock(block);
+  return -1;
 }
