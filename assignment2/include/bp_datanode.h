@@ -16,9 +16,9 @@ typedef struct {
     
 } BPLUS_DATA_NODE;
 
-BPLUS_DATA_NODE* create_root_data_node(int *fd);
+BPLUS_DATA_NODE* create_root_data_node(int *fd,BF_Block* block);
 
-BPLUS_DATA_NODE* create_data_node(int *fd);
+BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block);
 
 bool is_full_data(BPLUS_DATA_NODE* BP_DATA);
 

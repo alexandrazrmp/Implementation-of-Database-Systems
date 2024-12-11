@@ -28,13 +28,13 @@ int main()
 {
 
   insertEntries();
-  // findEntries();
+  findEntries();
 
   int fd;
   BPLUS_INFO* BP_INFO= BP_OpenFile(FILE_NAME,&fd);
-
   print_index(&fd,BP_INFO->root);
-  // print_data(&fd,BP_INFO->root);
+  //print_data(&fd,BP_INFO->root);
+  BF_Close();
 
   ////////////////////////////////////////////////
   
@@ -46,11 +46,11 @@ void insertEntries(){
   int file_desc;
   BPLUS_INFO* info = BP_OpenFile(FILE_NAME, &file_desc);
   Record record;
-  for (int i = 0; i < 18; i++)
+for (int i = 0; i < RECORDS_NUM; i++)
   {
     record = randomRecord();
-    printf("%d record %d %s \n",i,record.id, record.name);
-    BP_InsertEntry(file_desc,info, record); //SEGFAULT AFTER RECORDS = 3
+    //printf("%d record %d %s \n",i,record.id, record.name);
+    BP_InsertEntry(file_desc,info, record); 
   
 
     //printf("INSERTED ENTRY \n");
@@ -69,12 +69,11 @@ void findEntries(){
   Record tmpRec;  //Αντί για malloc
   Record* result=&tmpRec;
   
-  int id=159; 
+  int id=244; 
   printf("Searching for: %d\n",id);
-  BP_GetEntry( file_desc,info, id,&result);
-  if(result!=NULL)
+  if(BP_GetEntry( file_desc,info, id,&result)!=-1){
     printRecord(*result);
-
-  BP_CloseFile(file_desc,info);
-  BF_Close();
+  }
+  //BP_CloseFile(file_desc,info);
+  //BF_Close();
 }
