@@ -9,16 +9,18 @@
 
 
 typedef struct {
-    int record_counter;
-    
-    int NextDataBlockNum;
-    Record Records[4]; 
+
+    int record_counter; //Number of stored records in the array
+    int NextDataBlockNum; //The id of the next data block
+    Record Records[4]; //Array to store the Records in the data block
     
 } BPLUS_DATA_NODE;
 
 BPLUS_DATA_NODE* create_root_data_node(int *fd,BF_Block* block);
 
-BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block);
+
+BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block, int next);
+
 
 bool is_full_data(BPLUS_DATA_NODE* BP_DATA);
 

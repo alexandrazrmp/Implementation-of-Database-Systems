@@ -32,16 +32,17 @@ int BP_CreateFile(char *fileName)
   CALL_OR_EXIT(BF_AllocateBlock(fd,block));
   data = BF_Block_GetData(block);
   BPLUS_INFO bpinfo;
-  //bpinfo.max_height= 0;
+  bpinfo.height= 0;
   bpinfo.root = -1;
   bpinfo.data_size = 4;
   bpinfo.index_size = 4;
 
+  //increace the global variable
   last_block_num++;
 
   memcpy(data, &bpinfo, sizeof(BPLUS_INFO));            //storing metadata
   BF_Block_SetDirty(block);                             //marking the block as dirty since it has been altered
-  CALL_OR_EXIT(BF_UnpinBlock(block));                        //unpinning the block in order to close the file
+  CALL_OR_EXIT(BF_UnpinBlock(block));                   //unpinning the block in order to close the file
   CALL_OR_EXIT(BF_CloseFile(fd));
   return 0;
 }
@@ -108,43 +109,62 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
   temp2 = malloc(sizeof(int));
 
 
-  //if we have no root
+  //if we have no root we need to create a new index node and a new data node 
   if(bplus_info->root==-1){
+
     BF_Block* block1;
     BF_Block* block2;
     BF_Block_Init(&block1);
     BF_Block_Init(&block2);
     //BF_GetBlock(file_desc,0,block_meta);
+
+    //when we create the index node the block will be the root and a leaf at the same time 
     BP_INDEX = create_index_node(&file_desc,1,1,block1);
-    bplus_info->root = last_block_num;
+    bplus_info->root = last_block_num;  // update the root id in the struct 
     BP_DATA=create_root_data_node(&file_desc,block2);
-    BP_DATA->Records[0] = record;
+    
+    //add the records in the data node created above
+    BP_DATA->Records[0] = record; 
+    BP_DATA->record_counter = 1;
+
+    //add the keys and the pointer to the data block in the index node created above 
     BP_INDEX->keys[0] = record.id;
     BP_INDEX->pointers[1] = last_block_num;
     BP_INDEX->counter_keys = 1;
-    //unpin data block
+
+    //set dirty and unpin data block
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
     CALL_OR_EXIT(BF_UnpinBlock(block1));
     CALL_OR_EXIT(BF_UnpinBlock(block2));
+
     //BF_Block_SetDirty(block_meta);
     return 0;
   }
   else{
+
     BF_Block* block1;
     BF_Block* block2;
     BF_Block_Init(&block1);
     BF_Block_Init(&block2);
+
+    //get the root block and save it in the block1
     CALL_OR_EXIT(BF_GetBlock(file_desc,bplus_info->root,block1));
     void* data = BF_Block_GetData(block1);
     BP_INDEX = (BPLUS_INDEX_NODE*)data;
 
+    //searches for the block where we will add the data separating the indexes and data blocks if needed 
+    //the block will be returned in the ins_block parameter
     if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2) != 0){
       return -1;
     }
+
+    //get the block and the data 
     CALL_OR_EXIT(BF_GetBlock(file_desc,*ins_block ,block2));
     data = BF_Block_GetData(block2);
     BP_DATA = (BPLUS_DATA_NODE*) data;
+
+    //insert the record in the data node shifting the array so it will be in order
     int i;
     for (i = BP_DATA->record_counter-1; i >= 0; i--)
     {
@@ -159,7 +179,6 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
         // Insert the new value at the correct position
         BP_DATA->Records[i + 1] = record;
         BP_DATA->record_counter++;
-        // printf("in correct positiob\n");
        
         break; // Exit the loop as the insertion is complete
       }
@@ -169,33 +188,39 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     {     
       BP_DATA->Records[0] = record;
       BP_DATA->record_counter++;
-      
     }
-    // for(i = 0;i<BP_DATA->record_counter;i++){printf("Rec = %d,",BP_DATA->Records[i].id);}
-    // printf("\n");
+    
+    
+    // set dirty and unpin the blocks
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
     CALL_OR_EXIT(BF_UnpinBlock(block1));
     CALL_OR_EXIT(BF_UnpinBlock(block2));
+
     return 0;
   }
 }
 
 int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
 {  
+  // If bplus_info is null or the root is -1, the tree is empty.
   if (bplus_info == NULL || bplus_info->root == -1) {
-    // If bplus_info is null or the root is -1, the tree is empty.
     printf("B+ Tree is empty.\n");
     *record = NULL;
     return -1;
   }
+
+  //We begin searching the record from the root 
   int current_block_num = bplus_info->root;
   BF_Block *block;
   BF_Block_Init(&block);
   while (true) {
+
+    //Get the block and the data of the current block
     CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
     void *data = BF_Block_GetData(block);
     BPLUS_INDEX_NODE *BP_INFO = (BPLUS_INDEX_NODE *)data;
+    
     // Traverse keys to find the correct child
     int i;
     for (i = 0; i < BP_INFO->counter_keys; i++) {
@@ -203,18 +228,25 @@ int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
         break;
       }
     }
+
+    //get the next block
     current_block_num = BP_INFO->pointers[i];
 
+    //if we are on the last level we found the data block we will look for
     if (BP_INFO->leaf) {
       break;
     }
-    BF_UnpinBlock(block); // Release block for non-leaf nodes
+
+    // Release block for non-leaf nodes
+    BF_UnpinBlock(block); 
   }
 
-  // Handle leaf node
+  //Get the block and f=data of the index node in the last level 
   CALL_OR_EXIT(BF_GetBlock(file_desc, current_block_num, block));
   void *data = BF_Block_GetData(block);
   BPLUS_DATA_NODE *DATA_NODE = (BPLUS_DATA_NODE *)data;
+
+  //Traverse through all the data node to find the record we serch for 
   for (int i = 0; i < DATA_NODE->record_counter; i++) {
     if (DATA_NODE->Records[i].id == value) {
       *record = malloc(sizeof(Record));
@@ -228,6 +260,8 @@ int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
       return 0;
     }
   }
+
+  //if we didnt find the block return an null record
   *record = NULL;
   BF_UnpinBlock(block);
   return -1;

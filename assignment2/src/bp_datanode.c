@@ -20,14 +20,17 @@ BPLUS_DATA_NODE* create_root_data_node(int *fd,BF_Block* block){
     return BP_INFO;
 }
 
-BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block){
+BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block, int next){
     BPLUS_DATA_NODE* BP_INFO;
     void* data;
     CALL_OR_EXIT(BF_AllocateBlock(*fd,block));
     data = BF_Block_GetData(block);
     BP_INFO = data;
-    //BP_INFO->record_counter = 0;
-    BP_INFO->NextDataBlockNum = -1;
+    // BP_INFO->record_counter = 0;                       //itan se comment????????
+    if (next!=-1){                                                              //here
+        (BP_INFO->NextDataBlockNum) = next;                                       //here
+        printf("POINTERS[1]=%d\n", next);                                       //here
+    }
     last_block_num++;
     BF_Block_SetDirty(block);
     return BP_INFO;
@@ -48,7 +51,7 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     //if (!leaf_flag) BPLUS_INDEX_NODE *newindex = create_index_node(fd, INDEX_NODE->root, false, block1); 
     //else
     BF_Block_Init(&block1);
-    BPLUS_DATA_NODE* newdata=create_data_node(fd,block1); 
+    BPLUS_DATA_NODE* newdata=create_data_node(fd,block1, -1);   //no next yet
     int index = *ins_index;
 
     int *temp_keys;     // Array to hold the result of the keys after the insertion
@@ -79,6 +82,11 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     int mid = (Data_Node->record_counter + 1) / 2;
     int temp = Data_Node->record_counter;
     Data_Node->record_counter = 0;
+    int num;                                                    //here
+    BF_GetBlockCounter(*fd, &num);                               //here
+    num--;                                                          //here
+    printf("split and next = %d\n", num);
+    Data_Node->NextDataBlockNum = num;                          //here
     *ins_key = temp_keys[mid];
     int z=0;
     for (i = 0; i <mid; i++)
@@ -114,7 +122,9 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
      //was showing to wrong block
     free(temp_keys);
     BF_Block_SetDirty(block1);
+    //BF_Block_SetDirty(Data_Node);
     CALL_OR_EXIT(BF_UnpinBlock(block1));
+    //CALL_OR_EXIT(BF_UnpinBlock(Data_Node));
     //add next block num
     return ;
 
@@ -149,9 +159,9 @@ void print_data(int *fd, int root_block_num){
         printf("Data Node (Block: %d):\n", current_block_num);
         printf("  Record Counter: %d\n", data_node->record_counter);
         for (int i = 0; i < data_node->record_counter; i++) {
-            printf("    Person with id %d and name %s %s\n", data_node->Records[i].id,data_node->Records[i].name,data_node->Records[i].surname );
+            printf("Person with id %d and name %s \n", data_node->Records[i].id,data_node->Records[i].name);
         }
-        
+        printf("EDW      %d\n", data_node->NextDataBlockNum);
         current_block_num = data_node->NextDataBlockNum;
 
         CALL_OR_EXIT(BF_UnpinBlock(block));

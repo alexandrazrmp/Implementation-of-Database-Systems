@@ -7,9 +7,9 @@
 
 typedef struct
 {
-    int block_id;//the id of the block
-    bool root; // if we are in root
-    bool leaf; // if we in the last row of the tree
+    int block_id;//The id of the block
+    bool root; // a variable that shows if we are in root
+    bool leaf; //a variable that shows if we in the last row of the tree
     int counter_keys; //Number of keys in the node
     int keys[4]; // Array to store keys 
     int pointers[5]; // Array to store pointers
@@ -19,7 +19,7 @@ typedef struct
 
 }BPLUS_INDEX_NODE;
 
-//function to create a new index node 
+//function that creates a new index node 
 BPLUS_INDEX_NODE* create_index_node(int *fd,  bool is_root, bool is_leaf,BF_Block* block);
 
 // Function to check if an index node is full

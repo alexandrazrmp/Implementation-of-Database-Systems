@@ -18,10 +18,10 @@
 extern int last_block_num ;
 
 typedef struct {
-    int max_height;
-    int root;
-    int index_size;
-    int data_size;
+  int height; // the height of the tree
+  int root; //The id of the root block 
+  int index_size; // 
+  int data_size;
 } BPLUS_INFO;
 
 

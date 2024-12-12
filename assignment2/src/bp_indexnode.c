@@ -91,7 +91,9 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     //IF THERE IS NO DATA BLOCK
     
     if(INDEX_NODE->pointers[i] == -1){
-        BPLUS_DATA_NODE *Data_Node = create_data_node(fd,dataBlock);
+        int next = -1;                                                              //here
+        if (i == 0) next = INDEX_NODE->pointers[1];                                 //here 
+        BPLUS_DATA_NODE *Data_Node = create_data_node(fd,dataBlock, next);          //next
         *block = last_block_num;
         INDEX_NODE->pointers[i] = last_block_num;
         BF_Block_SetDirty(dataBlock);
@@ -374,7 +376,7 @@ int split_root(BPLUS_INFO *BP_INFO, BPLUS_INDEX_NODE *INDEX_NODE, int *block, in
     newROOT->pointers[0] = INDEX_NODE->block_id;
     newROOT->pointers[1] = index -1;
     BP_INFO->root = index;
-    BP_INFO->max_height++;
+    BP_INFO->height++;
     BF_Block_SetDirty(block_index);
     BF_Block_SetDirty(block_root);
     CALL_OR_EXIT(BF_UnpinBlock(block_index));
