@@ -34,8 +34,7 @@ int BP_CreateFile(char *fileName)
   BPLUS_INFO bpinfo;
   bpinfo.height= 0;
   bpinfo.root = -1;
-  bpinfo.data_size = 4;
-  bpinfo.index_size = 4;
+
 
   //increace the global variable
   last_block_num++;
@@ -99,8 +98,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 { 
   BPLUS_INDEX_NODE* BP_INDEX;
   BPLUS_DATA_NODE* BP_DATA;
-  //BF_Block* block_meta;
-  //BF_Block_Init(&block_meta);
+ 
   int* ins_block;
   int* temp1;
   int* temp2;
@@ -116,7 +114,6 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     BF_Block* block2;
     BF_Block_Init(&block1);
     BF_Block_Init(&block2);
-    //BF_GetBlock(file_desc,0,block_meta);
 
     //when we create the index node the block will be the root and a leaf at the same time 
     BP_INDEX = create_index_node(&file_desc,1,1,block1);
@@ -138,7 +135,6 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     CALL_OR_EXIT(BF_UnpinBlock(block1));
     CALL_OR_EXIT(BF_UnpinBlock(block2));
 
-    //BF_Block_SetDirty(block_meta);
     return 0;
   }
   else{

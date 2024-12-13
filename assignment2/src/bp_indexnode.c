@@ -15,22 +15,26 @@ BPLUS_INDEX_NODE *create_index_node(int *fd, bool is_root, bool is_leaf, BF_Bloc
     CALL_OR_EXIT(BF_AllocateBlock(*fd, block));
     data = BF_Block_GetData(block);
     BP_INFO = data;
+    
     // initialize the index node structure
     BP_INFO->block_id = last_block_num+1;
-    last_block_num++;
     BP_INFO->counter_keys = 0;
     BP_INFO->root = is_root;
     BP_INFO->leaf = is_leaf;
 
+    last_block_num++; //we increase the global variable that we use as a block id
+    
+    //we set all the arrays with the value -1
     memset(BP_INFO->keys, -1, sizeof(BP_INFO->keys));
     memset(BP_INFO->pointers, -1, sizeof(BP_INFO->pointers));
+
     return BP_INFO;
 }
 
 bool is_full_index(BPLUS_INDEX_NODE *BP_INFO)
 {
 
-    if (BP_INFO->counter_keys == 4)
+    if (BP_INFO->counter_keys == 61)
     {
         return true;
     }
@@ -38,8 +42,9 @@ bool is_full_index(BPLUS_INDEX_NODE *BP_INFO)
 }
 
 void Order_Keys(BPLUS_INDEX_NODE* INDEX_NODE,int value1,int value2) {
+    
+    //orders the keys and the pointers in the index node by shifting the table 
     int i;
-    //Shift is not right
     for (i = INDEX_NODE->counter_keys; i >= 0; i--)
     {
         if (value2 < INDEX_NODE->keys[i]&& INDEX_NODE->keys[i]!= -1)
@@ -72,7 +77,9 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     BF_Block *dataBlock;
     void *data;
     BF_Block_Init(&dataBlock);
-    //if seg fault look first!!!!////////////////////////////////////////////////////////////
+    
+    //first we check if the key from the arguments is the largest then we save the pointer into the variable i
+    //else traverse the rest of the keys starting from the zero until it finds the pointer i where the search should continue  
     if (INDEX_NODE->keys[(INDEX_NODE->counter_keys) - 1] < key && INDEX_NODE->pointers[(INDEX_NODE->counter_keys)] != -1 && INDEX_NODE->keys[(INDEX_NODE->counter_keys)] != -1)
     {
         i = (INDEX_NODE->counter_keys);
@@ -88,12 +95,19 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
         }
     }
     // i holds the pointer to the block we must search
-    //IF THERE IS NO DATA BLOCK
-    
+
+    //IF THERE IS NO DATA BLOCK we create one 
     if(INDEX_NODE->pointers[i] == -1){
-        int next = -1;                                                              //here
-        if (i == 0) next = INDEX_NODE->pointers[1];                                 //here 
-        BPLUS_DATA_NODE *Data_Node = create_data_node(fd,dataBlock, next);          //next
+        
+        //initialize next as -1
+        int next = -1;         
+        //if we are at pointers[0] (the left most pointer), then we know that pointer[1] already exists, so we pass it                                                    
+        if (i == 0){
+            next = INDEX_NODE->pointers[1];
+        }                                 
+        BPLUS_DATA_NODE *Data_Node = create_data_node(fd,dataBlock, next); //if next!=-1 it will be NextDataBlockNum for the left most block 
+
+        //initialise the variables from the struct properly 
         *block = last_block_num;
         INDEX_NODE->pointers[i] = last_block_num;
         BF_Block_SetDirty(dataBlock);
@@ -103,6 +117,7 @@ int search(BPLUS_INDEX_NODE *INDEX_NODE, BPLUS_INFO *BP_INFO, int key, int *fd, 
     CALL_OR_EXIT(BF_GetBlock(*fd, INDEX_NODE->pointers[i], dataBlock));
     data = BF_Block_GetData(dataBlock);
 
+    
     if (INDEX_NODE->leaf && INDEX_NODE->root){
         BPLUS_DATA_NODE *Data_Node;
         Data_Node = data;

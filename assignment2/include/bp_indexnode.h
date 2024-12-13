@@ -11,8 +11,8 @@ typedef struct
     bool root; // a variable that shows if we are in root
     bool leaf; //a variable that shows if we in the last row of the tree
     int counter_keys; //Number of keys in the node
-    int keys[4]; // Array to store keys 
-    int pointers[5]; // Array to store pointers
+    int keys[61]; // Array to store keys 
+    int pointers[62]; // Array to store pointers
 
     // int keys[((BF_BLOCK_SIZE/sizeof(int))/2)-3];
     // int pointers[((BF_BLOCK_SIZE/sizeof(int))/2)-2];

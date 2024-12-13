@@ -7,12 +7,11 @@
 #include <bp_indexnode.h>
 
 
-
 typedef struct {
 
     int record_counter; //Number of stored records in the array
     int NextDataBlockNum; //The id of the next data block
-    Record Records[4]; //Array to store the Records in the data block
+    Record Records[8]; //Array to store the Records in the data block
     
 } BPLUS_DATA_NODE;
 
