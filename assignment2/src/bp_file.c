@@ -60,8 +60,11 @@ BPLUS_INFO* BP_OpenFile(char *fileName, int *file_desc)
   void* data;
   CALL_OR_EXIT(BF_OpenFile(fileName,file_desc));  //opening file
   CALL_OR_EXIT(BF_GetBlock(*file_desc,0,block));  //getting metadata of the first block
-  //files[open_files] = *file_desc;
-  //open_files++;
+  
+  //save the file descriptors in an array
+  // files[open_files] = file_desc;
+  // open_files++;
+
   data = BF_Block_GetData(block);
   bpInfo = (BPLUS_INFO*) data;
   CALL_OR_EXIT(BF_GetBlockCounter(*file_desc,&last_block_num));
@@ -77,6 +80,9 @@ int BP_CloseFile(int file_desc,BPLUS_INFO* info)
   CALL_OR_EXIT(BF_GetBlockCounter(file_desc,&blocks));
   BF_Block *block;
   BF_Block_Init(&block);
+  CALL_OR_EXIT(BF_GetBlock(file_desc,0,block)); 
+  CALL_OR_EXIT(BF_UnpinBlock(block));
+
   //unpinning all blocks in order to close the file
   BF_Block_Init(&block);
   for(int i=1;i<blocks;i++){
@@ -84,12 +90,9 @@ int BP_CloseFile(int file_desc,BPLUS_INFO* info)
     CALL_OR_EXIT(BF_UnpinBlock(block));
     BF_Block_Init(&block);
   }
-  CALL_OR_EXIT(BF_GetBlock(file_desc,0,block));
-  BF_Block_SetDirty(block);  
-  CALL_OR_EXIT(BF_UnpinBlock(block));
+  
+
   CALL_OR_EXIT(BF_CloseFile(file_desc));
-  //open_files--;
-  //handle file array
   return 0;
 
 }
@@ -106,14 +109,16 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
   temp1 = malloc(sizeof(int));
   temp2 = malloc(sizeof(int));
 
+  void* data;
 
   //if we have no root we need to create a new index node and a new data node 
   if(bplus_info->root==-1){
-
     BF_Block* block1;
     BF_Block* block2;
+    BF_Block* block3;
     BF_Block_Init(&block1);
     BF_Block_Init(&block2);
+    BF_Block_Init(&block3);
 
     //when we create the index node the block will be the root and a leaf at the same time 
     BP_INDEX = create_index_node(&file_desc,1,1,block1);
@@ -132,9 +137,18 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     //set dirty and unpin data block
     BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
+    data = BF_Block_GetData(block1);
+    memcpy(data,BP_INDEX,sizeof(BPLUS_INDEX_NODE));
+    data = BF_Block_GetData(block2);
+    memcpy(data,BP_DATA,sizeof(BPLUS_DATA_NODE));
     CALL_OR_EXIT(BF_UnpinBlock(block1));
     CALL_OR_EXIT(BF_UnpinBlock(block2));
 
+    CALL_OR_EXIT(BF_GetBlock(file_desc,0,block3));
+    data = BF_Block_GetData(block3);
+    memcpy(data,bplus_info,sizeof(BPLUS_INFO));
+    BF_Block_SetDirty(block3);
+    CALL_OR_EXIT(BF_UnpinBlock(block3)); //It doesnt write to the memory any other way
     return 0;
   }
   else{
@@ -151,7 +165,7 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
 
     //searches for the block where we will add the data separating the indexes and data blocks if needed 
     //the block will be returned in the ins_block parameter
-    if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2) != 0){
+    if(search(BP_INDEX,bplus_info,record.id,&file_desc,ins_block,temp1,temp2,block1) != 0){
       return -1;
     }
 
@@ -188,9 +202,9 @@ int BP_InsertEntry(int file_desc,BPLUS_INFO *bplus_info, Record record)
     
     
     // set dirty and unpin the blocks
-    BF_Block_SetDirty(block1);
     BF_Block_SetDirty(block2);
-    CALL_OR_EXIT(BF_UnpinBlock(block1));
+    data = BF_Block_GetData(block2);
+    memcpy(data,BP_DATA,sizeof(BPLUS_DATA_NODE));
     CALL_OR_EXIT(BF_UnpinBlock(block2));
 
     return 0;
@@ -201,6 +215,7 @@ int BP_GetEntry(int file_desc,BPLUS_INFO *bplus_info, int value,Record** record)
 {  
   // If bplus_info is null or the root is -1, the tree is empty.
   if (bplus_info == NULL || bplus_info->root == -1) {
+    printf("%d\n",bplus_info->root);
     printf("B+ Tree is empty.\n");
     *record = NULL;
     return -1;

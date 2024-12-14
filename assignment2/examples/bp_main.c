@@ -7,7 +7,7 @@
 #include "bp_datanode.h"
 #include "bp_indexnode.h"
 
-#define RECORDS_NUM 20000 // you can change it if you want
+#define INSERT_NUM 5000
 #define FILE_NAME "data.db"
 
 
@@ -29,14 +29,13 @@ int main()
 
   insertEntries();
   findEntries();
-
+  BF_Init(LRU);
   int fd;
   BPLUS_INFO* BP_INFO= BP_OpenFile(FILE_NAME,&fd);
   print_index(&fd,BP_INFO->root);
-  //print_data(&fd,BP_INFO->root);
+  BP_CloseFile(fd,BP_INFO);
   BF_Close();
 
-  ////////////////////////////////////////////////
   
 }
 
@@ -46,17 +45,13 @@ void insertEntries(){
   int file_desc;
   BPLUS_INFO* info = BP_OpenFile(FILE_NAME, &file_desc);
   Record record;
-for (int i = 0; i < RECORDS_NUM; i++)
+  for (int i = 0; i < INSERT_NUM; i++)
   {
     record = randomRecord();
-    //printf("%d record %d %s \n",i,record.id, record.name);
     BP_InsertEntry(file_desc,info, record); 
-  
-
-    //printf("INSERTED ENTRY \n");
   }
-  //BP_CloseFile(file_desc,info);
-  //BF_Close();
+  BP_CloseFile(file_desc,info);
+  BF_Close();
 }
 
 void findEntries(){
@@ -69,11 +64,11 @@ void findEntries(){
   Record tmpRec;  //Αντί για malloc
   Record* result=&tmpRec;
   
-  int id=244; 
+  int id=500; 
   printf("Searching for: %d\n",id);
   if(BP_GetEntry( file_desc,info, id,&result)!=-1){
     printRecord(*result);
   }
-  //BP_CloseFile(file_desc,info);
-  //BF_Close();
+  BP_CloseFile(file_desc,info);
+  BF_Close();
 }

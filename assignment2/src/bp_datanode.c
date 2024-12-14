@@ -19,6 +19,7 @@ BPLUS_DATA_NODE* create_root_data_node(int *fd,BF_Block* block){
     BP_DATA->NextDataBlockNum = -1; //we use the value -1 to indicate that there is no next data block
     last_block_num++; //we increase the global variable that we use as a block id
     BF_Block_SetDirty(block);
+    memcpy(data,BP_DATA,sizeof(BPLUS_DATA_NODE));
     return BP_DATA;
 }
 
@@ -33,18 +34,18 @@ BPLUS_DATA_NODE* create_data_node(int *fd,BF_Block* block, int next){
     //If the variable next isn't -1 it means that we are on the first data block (pointers[0])
     //next holds the integer (block id) that points to the already allocated block to the right (poiters[1])
     if (next!=-1){                                                              
-        (BP_DATA->NextDataBlockNum) = next;                                       
-        printf("POINTERS[1]=%d\n", next);                                       
+        (BP_DATA->NextDataBlockNum) = next;                                                                             
     }
 
     last_block_num++;//we increase the global variable that we use as a block id
     BF_Block_SetDirty(block);
+    memcpy(data,BP_DATA,sizeof(BPLUS_DATA_NODE));
     return BP_DATA;
 }
 
 bool is_full_data(BPLUS_DATA_NODE* BP_DATA){
 
-    if (BP_DATA->record_counter==8){
+    if (BP_DATA->record_counter==RECORDS_NUM){
         return true;
     }
     return false;
@@ -54,9 +55,14 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     
 
     BF_Block *block1;
+    BF_Block *block2;
+
     BF_Block_Init(&block1);
+    BF_Block_Init(&block2);
     BPLUS_DATA_NODE* newdata=create_data_node(fd,block1, -1);   //the next will be -1 because we dont know the NextDataBlockNum yet 
+    CALL_OR_EXIT(BF_GetBlock(*fd,*block,block2));
     int index = *ins_index;
+    void* data;
 
     // Array to hold the result of the keys after the insertion
     int *temp_keys;   
@@ -93,11 +99,9 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     int temp = Data_Node->record_counter;
     Data_Node->record_counter = 0;
 
-    //
     int num;                                                    
     BF_GetBlockCounter(*fd, &num);                              
     num--;                                                       
-    printf("split and next = %d\n", num);
     Data_Node->NextDataBlockNum = num;                         
     
     //we insert at the already existing data node the sorted values from the temporary array until the middle element 
@@ -113,7 +117,7 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
         }
     }
 
-    //we insert at the new data node we created the sorted values from the temporary array beginning from the middle element up to the end
+    //we insert at the new data node the sorted values from the temporary array beginning from the middle element up to the end
     //and at the same time we count how many records we insert (record counter )
     j=0;
     newdata->record_counter = 0;
@@ -136,59 +140,23 @@ void split_data(BPLUS_INDEX_NODE *INDEX_NODE,BPLUS_DATA_NODE *Data_Node,int* blo
     //we return the index that should be inserted in the index node along with key 
     CALL_OR_EXIT(BF_GetBlockCounter(*fd, ins_index));
     *ins_index =*ins_index-1;
+    //We copy the data block in which the new record WILL NOT enter
     if(temp_keys[mid]<key){
         *block = *ins_index;
+        data = BF_Block_GetData(block2);
+        memcpy(data,Data_Node,sizeof(BPLUS_DATA_NODE));
+        BF_Block_SetDirty(block2);
+        CALL_OR_EXIT(BF_UnpinBlock(block2));
     }
-   
+    else{
+        data = BF_Block_GetData(block1);
+        memcpy(data,newdata,sizeof(BPLUS_DATA_NODE));
+        BF_Block_SetDirty(block1);
+        CALL_OR_EXIT(BF_UnpinBlock(block1));
+    }
+
     //free the array we created
-    free(temp_keys);
-    
-    
-    BF_Block_SetDirty(block1);
-    //BF_Block_SetDirty(Data_Node);
-    CALL_OR_EXIT(BF_UnpinBlock(block1));
-    //CALL_OR_EXIT(BF_UnpinBlock(Data_Node));
-    //add next block num
+    free(temp_keys);  
     return ;
-
-}
-
-void print_data(int *fd, int root_block_num){
-
-    BF_Block *block;
-    BF_Block_Init(&block);
-
-    //traverse the tree to find the most left index in the last level (leaf level)
-    int current_block_num = root_block_num;
-    while (true) {
-        CALL_OR_EXIT(BF_GetBlock(*fd, current_block_num, block));
-        void *data = BF_Block_GetData(block);
-        BPLUS_INDEX_NODE *index_node = (BPLUS_INDEX_NODE *)data;
-        
-        // If its the leaf stop traversal
-        if (index_node->leaf) {
-            break;
-        }
-
-        current_block_num = index_node->pointers[0];
-        CALL_OR_EXIT(BF_UnpinBlock(block));
-    }
-
-    //traverse in the data blocks using NextDataBlockNum
-    while (current_block_num != -1) {
-        CALL_OR_EXIT(BF_GetBlock(*fd, current_block_num, block));
-        void *data = BF_Block_GetData(block);
-        BPLUS_DATA_NODE *data_node = (BPLUS_DATA_NODE *)data;
-
-        printf("Data Node (Block: %d):\n", current_block_num);
-        printf("  Record Counter: %d\n", data_node->record_counter);
-        for (int i = 0; i < data_node->record_counter; i++) {
-            printf("Person with id %d and name %s \n", data_node->Records[i].id,data_node->Records[i].name);
-        }
-        printf("EDW      %d\n", data_node->NextDataBlockNum);
-        current_block_num = data_node->NextDataBlockNum;
-
-        CALL_OR_EXIT(BF_UnpinBlock(block));
-    }
 
 }
