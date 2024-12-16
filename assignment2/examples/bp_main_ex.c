@@ -7,7 +7,7 @@
 #include "bp_datanode.h"
 #include "bp_indexnode.h"
 
-#define RECORDS_NUM 200 // you can change it if you want
+#define INSERT_NUM 20000 // you can change it if you want
 #define FILE_NAME "data.db"
 
 #define CALL_OR_DIE(call)     \
@@ -29,7 +29,7 @@
 //   BPLUS_INFO* info = BP_OpenFile(FILE_NAME, &file_desc);
 //   Record record;
 //   srand(42);
-//   for (int i = 0; i < RECORDS_NUM; i++)
+//   for (int i = 0; i < INSERT_NUM; i++)
 //   {
     
 //     record = randomRecord();
@@ -72,7 +72,7 @@
 
 //   Record tmpRec;  //Αντί για malloc
 //   Record* result=&tmpRec;
-//   for (int i = 0; i < RECORDS_NUM; i++)
+//   for (int i = 0; i < INSERT_NUM; i++)
 //   {
 //     record = randomRecord();    
 //     // printRecord(record);
@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 {
   int entryNumber = atoi(argv[1]);
   test1(entryNumber);
+  
 }
 
 void test1(int entryNumber)
