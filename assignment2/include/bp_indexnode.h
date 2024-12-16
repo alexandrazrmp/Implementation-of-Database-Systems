@@ -16,7 +16,7 @@ typedef struct
     int counter_keys; //Number of keys in the node
     int keys[KEYS_NUM]; // Array to store keys 
     int pointers[KEYS_NUM+1]; // Array to store pointers
-
+    
 }BPLUS_INDEX_NODE;
 
 //function that creates a new index node 

@@ -12,5 +12,5 @@ run:
 
 main:
 	gcc -I ./include/ -L ./lib/ -Wl,-rpath,./lib/ ./examples/hp_main_ex.c ./src/record.c ./src/hp_file.c -lbf -o ./build/hp_main_ex -O2
-	./build/hp_main_ex 5
+	./build/hp_main_ex 1000
 	rm data.db

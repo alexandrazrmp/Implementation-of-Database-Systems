@@ -7,7 +7,7 @@
 #include "bp_datanode.h"
 #include "bp_indexnode.h"
 
-#define INSERT_NUM 20000 // you can change it if you want
+#define INSERT_NUM 1000 // you can change it if you want
 #define FILE_NAME "data.db"
 
 #define CALL_OR_DIE(call)     \
@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 {
   int entryNumber = atoi(argv[1]);
   test1(entryNumber);
+  // print_index()
   
 }
 
@@ -119,7 +120,7 @@ void test1(int entryNumber)
   Record sampledRecords[10];
   insertEntries(file_desc, bp_info, entryNumber,sampledRecords);
   
-  
+  // print_index(&file_desc,bp_info->root);
   // Print Records
   printEntries(file_desc, bp_info, entryNumber,sampledRecords);
   BP_CloseFile(file_desc, bp_info);

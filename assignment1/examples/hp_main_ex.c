@@ -27,7 +27,7 @@ void test2(int entryNumber);
 int main(int argc, char *argv[])
 {
   int entryNumber = atoi(argv[1]);
-  test2(entryNumber);
+  test1(entryNumber);
 }
 
 void test1(int entryNumber)
