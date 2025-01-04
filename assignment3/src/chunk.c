@@ -18,14 +18,13 @@ CHUNK_Iterator CHUNK_CreateIterator(int fileDesc, int blocksInChunk){
     CALL_BF(BF_GetBlockCounter(fileDesc, &totalBlocks));
 
     // Assign the last block ID and set the number of blocks per chunk
-    iterator.lastBlocksID = totalBlocks; 
+    iterator.lastBlocksID = totalBlocks - 1; 
     iterator.blocksInChunk = blocksInChunk;
 
     return iterator;
 }
 
 int CHUNK_GetNext(CHUNK_Iterator *iterator, CHUNK *chunk) {
-    
     // Check if the current block is beyond the last block in the file
     if (iterator->current > iterator->lastBlocksID) {
         return -1;  // No more chunks, return error code (-1)
@@ -37,7 +36,6 @@ int CHUNK_GetNext(CHUNK_Iterator *iterator, CHUNK *chunk) {
     
     // Set the from_BlockId of the chunk as the current block of the iterator
     chunk->from_BlockId = iterator->current;
-    
 
     // Set the to_BlockId as the end block for this chunk
     chunk->to_BlockId = iterator->current + iterator->blocksInChunk - 1;
@@ -56,9 +54,6 @@ int CHUNK_GetNext(CHUNK_Iterator *iterator, CHUNK *chunk) {
 
     // Move the iterator's current position forward by the number of blocks in the chunk
     iterator->current = chunk->to_BlockId + 1;
-
-    printf("Attempting to access block ID: %d\n", iterator->current);
-    printf("Total blocks in file: %d\n", iterator->lastBlocksID);
 
     
 

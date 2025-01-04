@@ -52,8 +52,10 @@ void sort_FileInChunks(int file_desc, int numBlocksInChunk){
     }
     
     // Process the file in chunks
-    int blocksProcessed = 0;
+    int blocksProcessed = 1;
     
+    int totalRecords = 0;
+
     while (blocksProcessed < totalBlocks) {
         // Calculate the end block for the current chunk
         int chunkEndBlock = blocksProcessed + numBlocksInChunk - 1;
@@ -124,45 +126,25 @@ void sort_FileInChunks(int file_desc, int numBlocksInChunk){
         // Move to the next chunk
         blocksProcessed = chunkEndBlock + 1;
         
-        free(recordsInChunk);  // Free the allocated memory for records in the chunk
+       
+        // printf("Sorting completed\n");
+        // for (int i = 0; i < numBlocksInChunk * HP_GetMaxRecordsInBlock(file_desc) ; i++)
+        // {
+        //     printf("the name is %s and surname %s and id  %d\n",recordsInChunk[i].name,recordsInChunk[i].surname,recordsInChunk[i].id);
+        //     totalRecords++;
+        // }
+        // printf("\n\n\n"); 
+        
+        
+        // free(recordsInChunk);  // Free the allocated memory for records in the chunk
+    
     }
+
+    // printf("Total records: %d\n", totalRecords);
+
+    
 }
 
-// void sort_Chunk(CHUNK* chunk){
-//     int i;
-//     int j;
-//     int swap;
-//     CHUNK_Iterator c_iter = CHUNK_CreateIterator(chunk->file_desc,chunk->blocksInChunk);
-//     CHUNK_RecordIterator r_iter = CHUNK_CreateRecordIterator(chunk);
-//     Record* rec1;
-//     Record* rec2;
-//     for(i=0;i<chunk->recordsInChunk;i++){
-//         swap = 0;
-//         if(CHUNK_GetIthRecordInChunk(chunk,i,rec1)==-1){
-//             printf("Couldn't return record\n");
-//             return;
-//         }
-//         for(j=0;j<(chunk->recordsInChunk)-i-1;j++){
-//             if(CHUNK_GetIthRecordInChunk(chunk,j,rec2)==-1){
-//                 printf("Couldn't return record\n");
-//                 return;
-//             }
-//             if(shouldSwap(rec1,rec2)==true){
-//                 swapRecords(rec1,rec2);
-
-//                 if (CHUNK_UpdateIthRecord(chunk, i, *rec1) == -1) {
-//                     printf("Couldn't update record %d\n", i);
-//                     return;
-//                 }
-
-//                 if (CHUNK_UpdateIthRecord(chunk, j, *rec2) == -1) {
-//                     printf("Couldn't update record %d\n", j);
-//                     return;
-//                 }
-//             }
-//         }
-//     }
-// }
 
 /* Sorts records within a CHUNK in ascending order based on the name and surname of each person. */
 void sort_Chunk(CHUNK* chunk) {
