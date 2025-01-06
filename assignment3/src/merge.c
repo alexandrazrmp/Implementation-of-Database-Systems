@@ -68,9 +68,6 @@ void merge(int input_FileDesc, int chunkSize, int bWay, int output_FileDesc) {
                 if (CHUNK_GetNextRecord(&recordIterators[minIndex], &records[minIndex]) != 0) {
                     activeChunks[minIndex] = 0;
                     chunkCount--;
-                } else {
-                    // Debugging to ensure we got a valid record
-                    // printf("Fetched record from chunk %d: ID = %d\n", minIndex, records[minIndex].id);
                 }
                 
             }
@@ -79,12 +76,15 @@ void merge(int input_FileDesc, int chunkSize, int bWay, int output_FileDesc) {
         // If fewer than bWay chunks are left, process them before exiting
         for (int i = 0; i < bWay; i++) {
             if (activeChunks[i]) {
+
                 // Write all remaining records for active chunks
                 while (CHUNK_GetNextRecord(&recordIterators[i], &records[i]) == 0) {
                     outputRecord = records[i];
-                    if (HP_InsertEntry(output_FileDesc, outputRecord) == -1) {
-                        fprintf(stderr, "Error writing record to output file.\n");
-                        exit(EXIT_FAILURE);
+                    if(strlen(outputRecord.name) != 0 || strlen(outputRecord.surname) != 0){
+                        if (HP_InsertEntry(output_FileDesc, outputRecord) == -1) {
+                            fprintf(stderr, "Error writing record to output file.\n");
+                            exit(EXIT_FAILURE);
+                        }
                     }
                 }
                 activeChunks[i] = 0;  // Mark chunk as fully processed
@@ -97,108 +97,3 @@ void merge(int input_FileDesc, int chunkSize, int bWay, int output_FileDesc) {
 }
 
 
-
-
-
-
-
-
-//chat gpt ALEX below
-
-
-// void merge(int input_FileDesc, int chunkSize, int bWay, int output_FileDesc) {
-//     // Initialize the chunk iterator to start from block 1 (skipping metadata in block 0)
-//     CHUNK_Iterator chunkIterator = CHUNK_CreateIterator(input_FileDesc, chunkSize);
-
-//     // Allocate memory for chunks and their record iterators
-//     CHUNK chunks[bWay];
-//     CHUNK_RecordIterator recordIterators[bWay];
-//     Record records[bWay];
-//     int activeChunks[bWay];  // Tracks active chunks (1 for active, 0 for exhausted)
-
-//     // Output record buffer for writing
-//     Record outputRecord;
-
-//     // Loop to process all chunks
-//     while (1) {
-//         int chunkCount = 0;  // Count of chunks currently loaded
-
-//         // Load up to bWay chunks into the arrays
-//         for (int i = 0; i < bWay; i++) {
-//             if (CHUNK_GetNext(&chunkIterator, &chunks[i]) == 0) {
-//                 recordIterators[i] = CHUNK_CreateRecordIterator(&chunks[i]);
-                
-//                 // Skip empty records for the chunk and ensure that the chunk is active if it has valid records
-//                 while (CHUNK_GetNextRecord(&recordIterators[i], &records[i]) == 0) {
-//                     // Check if the record is empty: id == 0 and all fields are empty
-//                     if (records[i].id != 0 || strlen(records[i].name) > 0 || strlen(records[i].surname) > 0 || strlen(records[i].city) > 0) {
-//                         activeChunks[i] = 1;  // Mark this chunk as active
-//                         chunkCount++;
-//                         break;  // Stop looking for more records for this chunk
-//                     }
-//                 }
-
-//                 if (activeChunks[i] == 0) {
-//                     activeChunks[i] = 0;  // Mark as inactive if no valid records found
-//                 }
-//             } else {
-//                 activeChunks[i] = 0;  // Mark as inactive if no more chunks
-//             }
-//         }
-
-//         // If no chunks were loaded, we are done
-//         if (chunkCount == 0) {
-//             break;
-//         }
-
-//         // Merge the bWay chunks
-//         while (chunkCount > 0) {
-//             int minIndex = -1;
-
-//             // Find the smallest record among the active chunks
-//             for (int i = 0; i < bWay; i++) {
-//                 if (activeChunks[i]) {
-//                     if (minIndex == -1 || shouldSwap(&records[minIndex], &records[i])) {
-//                         minIndex = i;
-//                     }
-//                 }
-//             }
-
-//             // Write the smallest record to the output file
-//             if (minIndex != -1) {
-//                 outputRecord = records[minIndex];
-
-//                 // Write the record to the output file
-//                 if (HP_InsertEntry(output_FileDesc, outputRecord) == -1) {
-//                     fprintf(stderr, "Error writing record to output file.\n");
-//                     exit(EXIT_FAILURE);
-//                 }
-
-//                 // Fetch the next record from the selected chunk
-//                 if (CHUNK_GetNextRecord(&recordIterators[minIndex], &records[minIndex]) != 0) {
-//                     activeChunks[minIndex] = 0;  // Mark chunk as inactive if exhausted
-//                     chunkCount--;  // Decrement chunk count as one chunk has been exhausted
-//                 }
-//             }
-//         }
-
-//         // Process remaining records in active chunks
-//         for (int i = 0; i < bWay; i++) {
-//             if (activeChunks[i]) {
-//                 // Write all remaining records for active chunks
-//                 while (CHUNK_GetNextRecord(&recordIterators[i], &records[i]) == 0) {
-//                     // Skip empty records: id == 0 and all fields are empty
-//                     if (records[i].id != 0 || strlen(records[i].name) > 0 || strlen(records[i].surname) > 0 || strlen(records[i].city) > 0) {
-//                         outputRecord = records[i];
-//                         if (HP_InsertEntry(output_FileDesc, outputRecord) == -1) {
-//                             fprintf(stderr, "Error writing record to output file.\n");
-//                             exit(EXIT_FAILURE);
-//                         }
-//                     }
-//                 }
-//                 activeChunks[i] = 0;  // Mark chunk as fully processed
-//                 chunkCount--;  // Decrease chunk count
-//             }
-//         }
-//     }
-// }

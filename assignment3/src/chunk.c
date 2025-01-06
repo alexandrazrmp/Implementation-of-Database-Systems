@@ -81,7 +81,7 @@ int CHUNK_GetIthRecordInChunk(CHUNK* chunk, int i, Record* record) {
 
     if (err != BF_OK) {
         BF_PrintError(err);
-        // BF_Block_Destroy(&block);
+        BF_Block_Destroy(&block);
         return -1;  // Error retrieving block
     }
 
@@ -100,7 +100,7 @@ int CHUNK_GetIthRecordInChunk(CHUNK* chunk, int i, Record* record) {
     }
     CALL_BF(BF_UnpinBlock(block));
     // Destroy the block to free the memory
-    // BF_Block_Destroy(&block); //If we lose data LOOK FIRST!!!!
+    BF_Block_Destroy(&block); //If we lose data LOOK FIRST!!!!
 
     return 0;  // Successfully retrieved the record
 }
@@ -128,7 +128,7 @@ int CHUNK_UpdateIthRecord(CHUNK* chunk, int i, Record record) {
 
     if (err != BF_OK) {
         BF_PrintError(err);
-        //BF_Block_Destroy(&block);
+        BF_Block_Destroy(&block);
         return -1;  // Error retrieving block
     }
 
@@ -145,13 +145,13 @@ int CHUNK_UpdateIthRecord(CHUNK* chunk, int i, Record record) {
     err = BF_UnpinBlock(block);
     if (err != BF_OK) {
         BF_PrintError(err);
-        //BF_Block_Destroy(&block);
+        BF_Block_Destroy(&block);
         return -1;  // Error unpinning block
     }
     //Unpin Block
     CALL_BF(BF_UnpinBlock(block));
     // Destroy the block to free the memory
-    //BF_Block_Destroy(&block);
+    BF_Block_Destroy(&block);
 
     return 0;  // Successfully updated the record
 }
@@ -167,7 +167,7 @@ void CHUNK_Print(CHUNK chunk){
 
         if (err != BF_OK) {
             BF_PrintError(err);
-            //BF_Block_Destroy(&block);
+            BF_Block_Destroy(&block);
             return;  // If there is an error retrieving the block, exit the function
         }
 
@@ -188,12 +188,12 @@ void CHUNK_Print(CHUNK chunk){
         err = BF_UnpinBlock(block);
         if (err != BF_OK) {
             BF_PrintError(err);
-           // BF_Block_Destroy(&block);
+           BF_Block_Destroy(&block);
             return;  // If there's an error unpinning the block, exit the function
         }
 
         // Destroy the block to free the memory
-        // BF_Block_Destroy(&block);
+        BF_Block_Destroy(&block);
     }
 
 }
