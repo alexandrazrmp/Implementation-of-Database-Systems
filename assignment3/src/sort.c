@@ -43,6 +43,9 @@ void swapRecords(Record* rec1, Record* rec2){
     *rec2 = temp;
 }
 
+
+
+
 void sort_FileInChunks(int file_desc, int numBlocksInChunk){
     // Retrieve the total number of blocks in the file
     int totalBlocks;
@@ -106,7 +109,7 @@ void sort_FileInChunks(int file_desc, int numBlocksInChunk){
             BF_Block_Init(&block);
             if (BF_GetBlock(file_desc, blockId, block) != BF_OK) {
                 BF_PrintError(BF_ERROR);
-                free(recordsInChunk);
+                // free(recordsInChunk);
                 return;
             }
 
@@ -127,7 +130,7 @@ void sort_FileInChunks(int file_desc, int numBlocksInChunk){
         blocksProcessed = chunkEndBlock + 1;
         
        
-        // printf("Sorting completed\n");
+        //printf("Sorting completed\n");
         // for (int i = 0; i < numBlocksInChunk * HP_GetMaxRecordsInBlock(file_desc) ; i++)
         // {
         //     printf("the name is %s and surname %s and id  %d\n",recordsInChunk[i].name,recordsInChunk[i].surname,recordsInChunk[i].id);

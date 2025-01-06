@@ -61,6 +61,7 @@ void sortPhase(int file_desc,int chunkSize){
     inputFileDesc = oututFileDesc;
   }
   HP_PrintAllEntries(oututFileDesc);
+ 
   HP_CloseFile(oututFileDesc);
 }
 

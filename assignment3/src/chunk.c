@@ -30,7 +30,6 @@ int CHUNK_GetNext(CHUNK_Iterator *iterator, CHUNK *chunk) {
         return -1;  // No more chunks, return error code (-1)
     }
     
-
     // Set up the chunk with current chunk details
     chunk->file_desc = iterator->file_desc;
     
@@ -50,15 +49,14 @@ int CHUNK_GetNext(CHUNK_Iterator *iterator, CHUNK *chunk) {
 
     // Calculate the number of records in the chunk (approximated per block)
     int recordsInBlock = HP_GetMaxRecordsInBlock(iterator->file_desc);  // Get the max records per block
-    chunk->recordsInChunk = chunk->blocksInChunk * recordsInBlock;
+    chunk->recordsInChunk = chunk->blocksInChunk * recordsInBlock; // Assumes all blocks are full
 
     // Move the iterator's current position forward by the number of blocks in the chunk
     iterator->current = chunk->to_BlockId + 1;
 
-    
-
     return 0;  // Successfully retrieved the next chunk
 }
+
 
 int CHUNK_GetIthRecordInChunk(CHUNK* chunk, int i, Record* record) {
     // Check if the given index 'i' is within valid bounds
@@ -195,7 +193,7 @@ void CHUNK_Print(CHUNK chunk){
         }
 
         // Destroy the block to free the memory
-       // BF_Block_Destroy(&block);
+        // BF_Block_Destroy(&block);
     }
 
 }
@@ -210,60 +208,63 @@ CHUNK_RecordIterator CHUNK_CreateRecordIterator(CHUNK *chunk){
     return iterator;
 }
 
-int CHUNK_GetNextRecord(CHUNK_RecordIterator *iterator,Record* record){
-    
-   // Get the block associated with the current blockId
+int CHUNK_GetNextRecord(CHUNK_RecordIterator *iterator, Record *record) {
     BF_Block *block;
     BF_Block_Init(&block);
 
-    // Retrieve the block using BF_GetBlock
-    BF_ErrorCode err = BF_GetBlock(iterator->chunk.file_desc, iterator->currentBlockId, block);
-    if (err != BF_OK) {
-        BF_PrintError(err);
-        // BF_Block_Destroy(&block);
-        return -1;  // Error in retrieving block
-    }
-
-    // Get the data from the block
-    char *data = BF_Block_GetData(block);
-    int recordsPerBlock = HP_GetMaxRecordsInBlock(iterator->chunk.file_desc);
-
-    // Check if the cursor is within the valid range for the block
-    if (iterator->cursor < recordsPerBlock) {
-        // Retrieve the record at the cursor position
-        *record = *((Record *)(data + iterator->cursor * sizeof(Record)));
-
-        // Move the cursor to the next record in the block
-        iterator->cursor++;
-
-        // If the cursor goes beyond the block's records, move to the next block
-        if (iterator->cursor >= recordsPerBlock) {
-            iterator->cursor = 0;
-            iterator->currentBlockId++;
-
-            // If we've reached the end of the chunk, return -1 to indicate no more records
-            if (iterator->currentBlockId > iterator->chunk.to_BlockId) {
-                BF_UnpinBlock(block);  // Unpin the last block before returning
-                // BF_Block_Destroy(&block);
-                return -1;
-            }
+    while (1) {
+        // Check if the current block is within the chunk's bounds
+        if (iterator->currentBlockId > iterator->chunk.to_BlockId) {
+            BF_Block_Destroy(&block);
+            return -1;  // No more records in the chunk
         }
 
-        // Unpin the current block after accessing the data
-        err = BF_UnpinBlock(block);
+        // Retrieve the block
+        BF_ErrorCode err = BF_GetBlock(iterator->chunk.file_desc, iterator->currentBlockId, block);
         if (err != BF_OK) {
             BF_PrintError(err);
-            // BF_Block_Destroy(&block);
+            BF_Block_Destroy(&block);
             return -1;
         }
 
-        // Destroy the block to free the memory
-        // BF_Block_Destroy(&block);
-        return 0;  // Successfully retrieved the next record
-    } else {
-        // If the cursor is out of bounds for the block, return -1
-        BF_UnpinBlock(block);
-        // BF_Block_Destroy(&block);
-        return -1;
+        // Get the data from the block
+        char *data = BF_Block_GetData(block);
+        int recordsPerBlock = HP_GetMaxRecordsInBlock(iterator->chunk.file_desc);
+
+        // Check if the cursor is within the valid range for the block
+        if (iterator->cursor < recordsPerBlock) {
+            // Retrieve the record
+            *record = *((Record *)(data + iterator->cursor * sizeof(Record)));
+            iterator->cursor++;
+
+            // If the cursor exceeds the block, reset and move to the next block
+            if (iterator->cursor >= recordsPerBlock) {
+                iterator->cursor = 0;
+                iterator->currentBlockId++;
+            }
+
+            // Unpin the current block
+            err = BF_UnpinBlock(block);
+            if (err != BF_OK) {
+                BF_PrintError(err);
+                BF_Block_Destroy(&block);
+                return -1;
+            }
+
+            BF_Block_Destroy(&block);
+            return 0;  // Successfully retrieved a record
+        }
+
+        // If the cursor is invalid, move to the next block
+        iterator->cursor = 0;
+        iterator->currentBlockId++;
+
+        // Unpin the current block before retrying
+        err = BF_UnpinBlock(block);
+        if (err != BF_OK) {
+            BF_PrintError(err);
+            BF_Block_Destroy(&block);
+            return -1;
+        }
     }
 }

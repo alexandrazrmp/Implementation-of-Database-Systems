@@ -10,6 +10,10 @@ run:
 	@echo " Run sort_main ...";
 	./build/sort_main
 
+run_upload:
+	@echo " Run sort_main_upload ...";
+	./build/sort_main_upload
+
 valgrind:
 	@echo " Valgrind sort_main ...";
 	valgrind ./build/sort_main
